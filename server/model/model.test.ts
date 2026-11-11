@@ -322,6 +322,17 @@ describe('Office', () => {
     expect(office.get('acc:9')).not.toHaveProperty('provider');
   });
 
+  it('subagente de La Voûte sai com nome e look fixos; os demais ao acaso', () => {
+    const { office, now } = makeOffice();
+    office.addMain({ id: 'acc:1', provider: 'claude', account: 'acc', sessionId: 's1', cwd: '/p/a', role: 'x', startedAt: now(), status: 'working' });
+    for (const n of [1, 2]) office.addSub({ id: `s1:c${n}`, parentId: 'acc:1', sessionId: 's1', role: 'chanel', background: false, startedAt: now() });
+    office.addSub({ id: 's1:g', parentId: 'acc:1', sessionId: 's1', role: 'Explore', background: false, startedAt: now() });
+    expect(office.get('s1:c1')).toMatchObject({ name: 'Chanel', look: 'f', parts: { hairStyle: 'bob' } });
+    expect(office.get('s1:c2')?.name).toBe('Chanel');
+    expect(office.get('s1:g')?.name).not.toBe('Chanel');
+    expect(office.get('s1:g')?.parts).toBeUndefined();
+  });
+
   it('rev só muda quando algo mudou', () => {
     const { office } = makeOffice();
     const r1 = office.commit();

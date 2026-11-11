@@ -28,6 +28,7 @@ import { nameKey, type AppearanceParts } from '../../shared/appearance';
 import { DemoSimulator } from '../../shared/demo/simulator';
 import { describeGitHubEvent, githubEventKey, RoomEffects, type GitHubEvent } from '../../shared/github';
 import { hash32 } from '../../shared/hash';
+import { vouteAgente } from '../../shared/voute-agentes';
 import { applyPermission } from '../permissions/registry';
 import type { NameStore, StoredCharacter } from './names';
 import { normalizeCwd, roomDisplayNames, SlotAllocator } from './rooms';
@@ -589,7 +590,9 @@ export class Office {
       this.reactivateSub(p.id);
       return true;
     }
-    const person = this.deps.names.assign(p.id, this.takenNames());
+    // Tipos de La Voûte: nome e look fixos; os demais seguem sorteados.
+    const fixo = vouteAgente(p.role);
+    const person = fixo ? { name: fixo.name, look: 'f' as const } : this.deps.names.assign(p.id, this.takenNames());
     const info: AgentInfo = {
       id: p.id,
       kind: 'sub',
@@ -609,6 +612,7 @@ export class Office {
       stats: zeroStats(),
       seed: hash32(p.id),
     };
+    if (fixo) info.parts = { ...fixo.parts };
     if (parent.info.provider) info.provider = parent.info.provider;
     if (p.title) info.title = p.title;
     if (p.background) info.background = true;
