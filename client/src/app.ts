@@ -7,6 +7,8 @@ import { createUI } from './ui';
 import type { CitySceneHost } from './ui/world/scene-switch';
 import type { CityScene } from './world/city';
 import { migrateLegacyKeys, safeLocalStorage } from './ui/prefs';
+import { aplicarVoute } from './net/voute-estado';
+import { montarBotonVoute } from './ui/voute';
 import { getLocale, tr } from '../../shared/i18n';
 
 export function start(): void {
@@ -27,6 +29,7 @@ export function start(): void {
   const world = createWorld(worldCanvas, store);
   const city = cityHost({ world, worldCanvas, uiRoot, mock: store.mock, params, version: () => store.liveSnapshot?.meta.version ?? '' });
   createUI(uiRoot, store, world, city);
+  montarBotonVoute(uiRoot, safeLocalStorage(), (on) => store.setView(on ? (s) => aplicarVoute(s, true) : null));
   // O que esta página pode fazer (porta local ou remota com login) chega antes do primeiro snapshot (ou desiste em
   // poucos segundos e fica a regra de antes).
   if (store.mock) store.connect();

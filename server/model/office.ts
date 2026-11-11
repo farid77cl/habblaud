@@ -82,6 +82,8 @@ export interface OfficeDeps {
   ptys?: () => { status: PtyStatus; list: PtyInfo[] };
   /** Habblaud World (WorldService.meta; ver OfficeSnapshot.meta.world). */
   world?: () => WorldMeta;
+  /** La Voûte: todo el roster siempre presente, en reposo (una real del mismo tipo ocupa su asiento). */
+  residents?: boolean;
   now?: () => number;
 }
 

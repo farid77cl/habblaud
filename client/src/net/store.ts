@@ -383,7 +383,18 @@ export class OfficeStore {
     this.checkBuild(snap.meta.build);
   }
 
-  private setSnapshot(snap: OfficeSnapshot): void {
+  /** Filtro de presentación del snapshot (La Voûte: look Voûte de los agentes); el crudo queda en `rawSnapshot`. */
+  private view: ((s: OfficeSnapshot) => OfficeSnapshot) | null = null;
+  private rawSnapshot: OfficeSnapshot | null = null;
+
+  setView(view: ((s: OfficeSnapshot) => OfficeSnapshot) | null): void {
+    this.view = view;
+    if (this.rawSnapshot && !this.replay) this.setSnapshot(this.rawSnapshot);
+  }
+
+  private setSnapshot(raw: OfficeSnapshot): void {
+    this.rawSnapshot = raw;
+    const snap = this.view ? this.view(raw) : raw;
     this.snapshot = snap;
     this.agentIndex = new Map(snap.agents.map((a) => [a.id, a]));
     this.roomIndex = new Map(snap.rooms.map((r) => [r.id, r]));

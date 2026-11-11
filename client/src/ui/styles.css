@@ -11147,3 +11147,35 @@ html.is-replay #world {
 .ui-world-chip__visitors[hidden] {
   display: none;
 }
+
+/* La Voûte: paleta burdeos / negro / rosa (botón «La Voûte», ui/voute.ts). Las habitaciones de cabaret van en la ronda 2. */
+html.voute .ui-root {
+  --ui-bg: rgba(24, 6, 14, 0.88);
+  --ui-bg-solid: rgba(26, 6, 15, 0.97);
+  --ui-bg-soft: rgba(255, 79, 163, 0.05);
+  --ui-bg-hover: rgba(255, 79, 163, 0.1);
+  --ui-line: rgba(255, 79, 163, 0.2);
+  --ui-line-strong: rgba(255, 79, 163, 0.38);
+  --ui-text: #fbe6ef;
+  --ui-muted: #d49ab3;
+  --ui-faint: #b9809a;
+  --ui-accent: #ff4fa3;
+  --ui-accent-soft: rgba(255, 79, 163, 0.18);
+}
+html.voute body { background: #12040a; }
+
+.voute-toggle {
+  position: fixed;
+  left: var(--gap, 10px);
+  bottom: calc(var(--feed-head, 38px) + var(--gap, 10px) * 2);
+  z-index: 60;
+  pointer-events: auto;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 7px);
+  border: 1px solid #ff4fa3;
+  background: #1a0610;
+  color: #ff8fb8;
+  font: 600 12px/1 var(--font-ui, system-ui);
+  cursor: pointer;
+}
+.voute-toggle[aria-pressed='true'] { background: #6d0f2a; color: #fff; box-shadow: 0 0 10px rgba(255, 79, 163, 0.6); }

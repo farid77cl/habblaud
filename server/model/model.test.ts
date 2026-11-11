@@ -826,7 +826,7 @@ describe('residentes de La Voûte', () => {
   it('una real del mismo tipo ocupa su asiento sin duplicarse', () => {
     const o = mk(true);
     o.addMain({ id: 'acc:1', account: 'acc', sessionId: 's1', cwd: '/p/a', role: 'x', startedAt: 0, status: 'working' });
-    o.addSub({ id: 'sub1', parentId: 'acc:1', sessionId: 's1', role: 'chanel', startedAt: 0 });
+    o.addSub({ id: 'sub1', parentId: 'acc:1', sessionId: 's1', role: 'chanel', startedAt: 0, background: false });
     const names = o.commit().snapshot.agents.map((a) => a.name);
     expect(names.filter((n) => n === 'Chanel')).toHaveLength(1);
     expect(names).toHaveLength(23 + 1);
