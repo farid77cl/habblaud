@@ -808,3 +808,27 @@ describe('Office: personagem do projeto', () => {
     expect(names.character('/p/api')?.owner).toBe('s2b');
   });
 });
+
+describe('residentes de La Voûte', () => {
+  const mk = (residents?: boolean) =>
+    new Office({ names: new NameStore(null), version: 't', startedAt: 0, accounts: () => [], sources: () => [], accountName: () => undefined, ...(residents ? { residents } : {}) });
+
+  it('apagado por defecto: el snapshot no trae residentes', () => {
+    expect(mk().commit().snapshot.agents).toEqual([]);
+  });
+  it('encendido: todo el roster en reposo, en la sala La Voûte', () => {
+    const s = mk(true).commit().snapshot;
+    expect(s.agents).toHaveLength(23);
+    expect(s.agents.every((a) => a.status === 'idle')).toBe(true);
+    const room = s.rooms.find((r) => r.id === s.agents[0].roomId);
+    expect(room?.name).toBe('La Voûte');
+  });
+  it('una real del mismo tipo ocupa su asiento sin duplicarse', () => {
+    const o = mk(true);
+    o.addMain({ id: 'acc:1', account: 'acc', sessionId: 's1', cwd: '/p/a', role: 'x', startedAt: 0, status: 'working' });
+    o.addSub({ id: 'sub1', parentId: 'acc:1', sessionId: 's1', role: 'chanel', startedAt: 0 });
+    const names = o.commit().snapshot.agents.map((a) => a.name);
+    expect(names.filter((n) => n === 'Chanel')).toHaveLength(1);
+    expect(names).toHaveLength(23 + 1);
+  });
+});

@@ -29,6 +29,7 @@ import { DemoSimulator } from '../../shared/demo/simulator';
 import { describeGitHubEvent, githubEventKey, RoomEffects, type GitHubEvent } from '../../shared/github';
 import { hash32 } from '../../shared/hash';
 import { vouteAgente } from '../../shared/voute-agentes';
+import { VOUTE_ROOM_ID, VOUTE_ROOM_NAME, residentesAusentes } from '../../shared/voute-residentes';
 import { applyPermission } from '../permissions/registry';
 import type { NameStore, StoredCharacter } from './names';
 import { normalizeCwd, roomDisplayNames, SlotAllocator } from './rooms';
@@ -959,11 +960,12 @@ export class Office {
     const now = this.now();
     const entries = new Map(this.rooms);
     for (const r of this.demoSnap?.rooms ?? []) entries.set(r.id, { path: r.path, createdAt: r.createdAt });
+    if (this.deps.residents) entries.set(VOUTE_ROOM_ID, { path: VOUTE_ROOM_NAME, createdAt: this.deps.startedAt });
     this.slots.sync(entries.keys(), now);
     const rooms: RoomInfo[] = [...entries]
       .map(([id, r]) => ({
         id,
-        name: this.roomName(id),
+        name: id === VOUTE_ROOM_ID ? VOUTE_ROOM_NAME : this.roomName(id),
         path: r.path,
         slot: this.slots.slotOf(id) ?? 0,
         seed: hash32(id),
@@ -977,6 +979,7 @@ export class Office {
     }
     const perms = this.deps.permissions?.();
     const real = [...this.agents.values()].map((r) => applyPermission(cloneAgent(r.info), perms?.get(r.info.id)));
+    const residentes = this.deps.residents ? residentesAusentes(real, this.deps.startedAt) : [];
     const reach = this.deps.messages?.();
     // Mensagens pelo escritório: principais presentes cuja sessão está com o plugin conectado. No demo quem decide é
     // o simulador; com o recurso desligado, ninguém recebe.
@@ -994,7 +997,7 @@ export class Office {
       rev: this.rev,
       serverTime: now,
       rooms,
-      agents: [...real, ...demoAgents].map(trim),
+      agents: [...real, ...residentes, ...demoAgents].map(trim),
       accounts: [...this.deps.accounts(sessions), ...(this.demoSnap?.accounts ?? [])],
       ...(ptys ? { ptys: ptys.list } : {}),
       meta: {
