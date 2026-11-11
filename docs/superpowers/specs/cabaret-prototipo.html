@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>La Voûte — prototipo cabaret (Barbie)</title>
+<style>
+:root{--b9:#2a0a12;--b7:#5a1426;--b6:#6e1a30;--b5:#8c2240;--n9:#0d0a0c;--n7:#1e1619;--neon:#ff3fa4;--glow:#ff8fcf;--oro:#d4a64a;--luz:#ffe08a;--crema:#f3e6d0;--asf:#1b1a20;--asf2:#24232b}
+body{margin:0;background:var(--n9);color:var(--crema);font:1rem system-ui,sans-serif;padding:1rem}
+h2{font-size:1rem;margin:.5rem 0}
+.bar{display:flex;gap:.5rem;justify-content:flex-end;padding:.5rem;background:#111}
+.bar button{height:36px;min-width:44px;border-radius:6px;font-size:.875rem;cursor:pointer}
+.z{background:#333;color:#eee;border:1px solid #555}
+.lv{background:var(--n7);color:var(--crema);border:1px solid var(--oro)}
+.lv:hover,.lv:focus-visible{background:var(--b9);border:2px solid var(--neon);outline:2px solid var(--glow)}
+.lv[aria-pressed=true]{background:var(--neon);color:var(--n9);border-color:var(--luz)}
+.lv[aria-pressed=true]::after{content:" ●"}
+canvas{image-rendering:pixelated;width:640px;height:400px;display:block;margin-top:.5rem;border:1px solid #333}
+</style></head><body>
+<div class="bar"><button class="lv" id="lv" aria-pressed="true" title="Volver a la oficina">✦ La Voûte</button><button class="z">−</button><button class="z">+</button><button class="z">⚙</button></div>
+<p aria-live="polite" id="msg">La Voûte activada</p>
+<h2>Exterior de noche + camerino de tocadores + barra (escala 1 px = 4 px)</h2>
+<canvas id="c" width="160" height="100"></canvas>
+<script>
+const c=document.getElementById('c'),g=c.getContext('2d');const C=getComputedStyle(document.documentElement);const v=n=>C.getPropertyValue('--'+n).trim();
+const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
+function bulb(x,y){g.globalAlpha=.4;R(x-1,y,3,1,v('luz'));R(x,y-1,1,3,v('luz'));g.globalAlpha=1;R(x,y,1,1,v('luz'))}
+function cabaret(){
+ R(0,0,160,100,v('n9'));
+ for(let x=0;x<160;x++)for(let y=0;y<22;y++)R(x,y,1,1,(x+y)%3?v('asf'):v('asf2'));
+ [[8,2],[60,5],[120,3],[150,8],[30,7]].forEach(([x,y])=>R(x,y,1,1,v('crema')));
+ R(70,14,20,8,v('b5'));R(68,15,1,5,v('oro'));R(91,15,1,5,v('oro'));
+ g.globalAlpha=.5;R(54,1,52,10,v('glow'));g.globalAlpha=1;R(56,3,48,6,v('n9'));
+ g.fillStyle=v('neon');g.font='6px monospace';g.fillText('La Voûte',58,8);
+ [10,40,120,150].forEach(x=>{R(x,10,1,12,v('n7'));bulb(x,9)});
+ for(let x=0;x<80;x++)for(let y=22;y<100;y++)R(x,y,1,1,(x>>2)%2?v('b7'):v('b6'));
+ R(0,22,80,10,v('n7'));for(let x=0;x<80;x+=4)R(x,22,2,10,v('b9'));R(0,31,80,1,v('oro'));
+ for(let i=0;i<3;i++){const x=6+i*25;R(x,36,18,10,v('oro'));R(x+1,37,16,8,'#3a2a40');R(x+4,38,1,1,v('glow'));R(x+5,39,1,1,v('glow'));[1,5,9,13,17].forEach(d=>bulb(x+d,36));R(x-1,46,20,4,v('n7'));R(x-1,46,20,1,v('oro'));R(x+3,45,1,2,v('neon'));R(x+6,45,1,2,v('oro'));R(x+7,54,5,3,v('b5'));R(x+9,57,1,4,v('oro'))}
+ for(let x=80;x<160;x++)for(let y=22;y<100;y++)R(x,y,1,1,((x>>2)+(y>>2))%2?v('n7'):v('b9'));
+ R(80,22,80,10,v('n9'));R(80,31,80,1,v('neon'));
+ R(86,24,68,1,v('n7'));[[90,'#1f4a3a'],[96,'#b0662a'],[102,v('neon')],[108,'#1f4a3a'],[114,'#b0662a']].forEach(([x,col])=>{R(x,25,2,5,col);R(x,25,1,1,'#fff')});
+ R(86,50,68,8,v('n7'));R(86,50,68,2,v('b7'));R(86,50,68,1,v('glow'));R(86,56,68,1,v('oro'));
+ [92,106,120,134].forEach(x=>{R(x,62,5,3,v('b5'));R(x+2,65,1,6,v('oro'))});
+}
+function oficina(){R(0,0,160,100,'#6aa84f');R(0,22,160,78,'#c9d1dc');R(0,22,160,10,'#eef1f4');for(let i=0;i<3;i++)R(6+i*25,40,18,8,'#ffffff')}
+let on=true;const b=document.getElementById('lv');
+b.onclick=()=>{on=!on;b.setAttribute('aria-pressed',on);b.title=on?'Volver a la oficina':'Entrar a La Voûte';document.getElementById('msg').textContent=on?'La Voûte activada':'Oficina de vuelta';on?cabaret():oficina()};
+cabaret();
+</script></body></html>
