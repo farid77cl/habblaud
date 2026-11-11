@@ -1,5 +1,7 @@
 // Núcleo do prédio (colunas 0 e 1): recepção com elevadores, banheiros, copa e lounge.
 import type { WallStyle } from '../../art/api';
+import { VOUTE_THEMES } from '../../art/theme';
+import { VP, isVoute } from '../../art/voute';
 import { COL_W, NORTH_Y, ROOM_H, SOUTH_Y, TILE } from '../constants';
 import { AreaBuilder, SEATED_SORT_BIAS } from './builder';
 import type { AreaLayout } from './types';
@@ -19,15 +21,25 @@ export const CORE_WALLS = {
   glass: { base: '#cfe6f0', trim: '#9fb9c6', pattern: 'glass' } satisfies WallStyle,
 };
 
+export const VOUTE_CORE_WALLS = {
+  reception: VOUTE_THEMES.vestibulo.wall,
+  restroom: VOUTE_THEMES.camerinos.wall,
+  cafe: VOUTE_THEMES.barra.wall,
+  cafeSplash: { base: '#2a0a12', trim: '#d4a64a', pattern: 'marble' } satisfies WallStyle,
+  lounge: VOUTE_THEMES.salon.wall,
+  glass: { base: '#3a0f1e', trim: '#d4a64a', pattern: 'glass' } satisfies WallStyle,
+};
+
 /** Centros (em tiles locais) dos dois elevadores na face norte da recepção. */
 export const ELEVATOR_CX = [3, 6.5] as const;
 
 export function layoutReception(): AreaLayout {
+  const voute = isVoute();
   const b = new AreaBuilder(RECEPTION_ID, 'reception', { x: 0, y: NORTH_Y, w: COL_W, h: ROOM_H });
-  const wall = CORE_WALLS.reception;
+  const wall = voute ? VOUTE_CORE_WALLS.reception : CORE_WALLS.reception;
   b.floor('marble', 0, 0, 16, 12, 101);
-  b.rug(1.5, 2.2, 6.5, 2.6, '#3d5a80', 102);
-  b.rug(8.6, 6.4, 5.2, 3.2, '#b65f3a', 103);
+  b.rug(1.5, 2.2, 6.5, 2.6, voute ? VP.crimson : '#3d5a80', 102);
+  b.rug(8.6, 6.4, 5.2, 3.2, voute ? VP.crimson : '#b65f3a', 103);
   b.face(0.5, 15, wall);
   b.cap(0, 0, 0.5, 12, wall);
   b.cap(15.5, 0, 0.5, 12, wall);
@@ -72,11 +84,12 @@ export function layoutReception(): AreaLayout {
 }
 
 export function layoutRestroom(): AreaLayout {
+  const voute = isVoute();
   const b = new AreaBuilder(RESTROOM_ID, 'restroom', { x: 0, y: SOUTH_Y, w: COL_W, h: ROOM_H });
-  const wall = CORE_WALLS.restroom;
+  const wall = voute ? VOUTE_CORE_WALLS.restroom : CORE_WALLS.restroom;
   b.floor('tile_white', 0, 0, 16, 12, 201);
   // tapetinho só na frente das pias (nada de tapete grande no meio do banheiro)
-  b.rug(2, 3.15, 3, 0.85, '#6fa3b8', 202);
+  b.rug(2, 3.15, 3, 0.85, voute ? VP.crimson : '#6fa3b8', 202);
   b.face(0.5, 15, wall, [{ lx: 7, w: 2 }]);
   b.wall('door_frame', 8, undefined, { order: 0.05 });
   b.south(0.5, 15, 11, { ...wall, exterior: true });
@@ -109,18 +122,19 @@ export function layoutRestroom(): AreaLayout {
   const bench = b.furn('bench', 3, 9, undefined, { order: 0.5 });
   for (let i = 0; i < 2; i++) b.seat('bench', 'bench', 3 + i, 9, 'down', undefined, { noFurniture: true, furnitureId: bench });
   b.furn('trash_bin', 9, 10, undefined, { order: 0.6 });
-  b.rug(2.5, 9.9, 3, 0.9, '#9cc3cf', 203);
+  b.rug(2.5, 9.9, 3, 0.9, voute ? VP.crimson : '#9cc3cf', 203);
   b.furn('plant_small', 1, 6, 'flower', { order: 0.24 });
   b.furn('plant_small', 12, 10, 'fern', { order: 0.25 });
   return b.build();
 }
 
 export function layoutCafe(): AreaLayout {
+  const voute = isVoute();
   const b = new AreaBuilder(CAFE_ID, 'cafe', { x: COL_W, y: NORTH_Y, w: COL_W, h: ROOM_H });
-  const wall = CORE_WALLS.cafe;
+  const wall = voute ? VOUTE_CORE_WALLS.cafe : CORE_WALLS.cafe;
   b.floor('tile_check', 0, 0, 16, 12, 301);
   // frontão de mármore atrás da bancada + parede clara com janelas
-  b.face(0.5, 9, CORE_WALLS.cafeSplash);
+  b.face(0.5, 9, voute ? VOUTE_CORE_WALLS.cafeSplash : CORE_WALLS.cafeSplash);
   b.face(9.5, 6, wall);
   b.cap(0, 0, 0.5, 12, wall);
   b.cap(15.5, 0, 0.5, 12, wall);
@@ -154,7 +168,7 @@ export function layoutCafe(): AreaLayout {
   b.spot('window', 13, 2, 'up', { dx: 12, dy: 1 });
 
   // mesa comunitária comprida no centro, sobre um tapete, com cadeiras dos dois lados
-  b.rug(2.6, 4.15, 8.8, 3.7, '#b98a5e', 302);
+  b.rug(2.6, 4.15, 8.8, 3.7, voute ? VP.crimson : '#b98a5e', 302);
   b.furn('meeting_table', 4, 5, undefined, { order: 0.5 });
   b.furn('meeting_table', 7, 5, undefined, { order: 0.51 });
   for (let i = 0; i < 6; i++) {
@@ -187,14 +201,15 @@ export function layoutCafe(): AreaLayout {
 }
 
 export function layoutLounge(): AreaLayout {
+  const voute = isVoute();
   const b = new AreaBuilder(LOUNGE_ID, 'lounge', { x: COL_W, y: SOUTH_Y, w: COL_W, h: ROOM_H });
-  const wall = CORE_WALLS.lounge;
+  const wall = voute ? VOUTE_CORE_WALLS.lounge : CORE_WALLS.lounge;
   b.floor('wood', 0, 0, 16, 12, 401);
-  b.rug(1.5, 3.2, 7, 5.2, '#4f8a5b', 402);
-  b.rug(9.2, 4.6, 5.6, 4.4, '#d7c8a8', 403);
+  b.rug(1.5, 3.2, 7, 5.2, voute ? VP.crimson : '#4f8a5b', 402);
+  b.rug(9.2, 4.6, 5.6, 4.4, voute ? VP.crimson : '#d7c8a8', 403);
   // parede com TV a oeste; vidro a leste; passagem larga no meio
   b.face(0.5, 6.5, wall);
-  b.face(10, 5.5, CORE_WALLS.glass);
+  b.face(10, 5.5, voute ? VOUTE_CORE_WALLS.glass : CORE_WALLS.glass);
   b.south(0.5, 15, 11, { ...wall, exterior: true });
   b.cap(0, 0, 0.5, 12, wall);
   b.cap(15.5, 0, 0.5, 12, wall);

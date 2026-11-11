@@ -444,6 +444,10 @@ export function createWorld(canvas: HTMLCanvasElement, store: OfficeStore, o: Cr
       worldNow = p ? p.clock() : 0;
       rebuild();
     },
+    rebuild: () => {
+      rebuild();
+      onSnapshot();
+    },
     onSound: (cb) => {
       soundCbs.add(cb);
       return () => void soundCbs.delete(cb);

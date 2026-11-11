@@ -23,6 +23,18 @@ export const VP = {
   n9: '#0d0a0c', n7: '#1e1619',
   rn: '#ff3fa4', rg: '#ff8fcf', or: '#d4a64a', ol: '#ffe08a', cr: '#f3e6d0',
   as1: '#1b1a20', as2: '#24232b', ve: '#2a2830', ln: '#c9a447',
+  crimson: '#8c2240',
+  gold: '#d4a64a',
+  goldHi: '#ffe08a',
+  pink: '#ff3fa4',
+  pinkGlow: '#ff8fcf',
+  cream: '#f3e6d0',
+  asphalt: '#1b1a20',
+  asphalt2: '#24232b',
+  curb: '#2a2830',
+  lane: '#c9a447',
+  darkWood: '#1c0b14',
+  corridorFloor: '#12090e',
 } as const;
 
 /** Estilo de cada sala de La Voûte (por id de sala), para que no sean clones de la oficina. */

@@ -20,16 +20,26 @@ const V = (carpet: string, carpet2: string, base: string, trim: string, pattern:
   carpet, carpet2, wall: { base, trim, pattern }, accent, deskVariant: 'vanity', chairVariant: 'velvet',
 });
 
-/** Superficies cabaret por sala (spec Barbie 11/11/2026), reemplazan a THEMES con el modo Voûte. */
-export const VOUTE_THEMES: readonly RoomTheme[] = [
-  V('#5a1426', '#6e1a30', '#1e1619', '#d4a64a', 'stripes', '#ffe08a'), // camarín de tocadores
-  V('#2a0a12', '#5a1426', '#0d0a0c', '#d4a64a', 'wood_panel', '#d4a64a'), // reservado VIP
-  V('#1e1619', '#2a0a12', '#0d0a0c', '#ff3fa4', 'brick', '#ff3fa4'), // barra
-  V('#6e1a30', '#8c2240', '#1e1619', '#d4a64a', 'stripes', '#ff3fa4'), // salón de sofás
-  V('#5a1426', '#2a0a12', '#0d0a0c', '#d4a64a', 'plain', '#ffe08a'), // vestíbulo con telón
-  V('#2a0a12', '#1e1619', '#1e1619', '#ff8fcf', 'plain', '#ff8fcf'), // camerinos privados
-  V('#5a1426', '#8c2240', '#0d0a0c', '#ff3fa4', 'stripes', '#ff3fa4'), // La Voûte (sala propia)
+const VOUTE_LIST: readonly RoomTheme[] = [
+  V('#5a1426', '#6e1a30', '#1e1619', '#d4a64a', 'stripes', '#ffe08a'), // 0: camarín de tocadores
+  V('#2a0a12', '#5a1426', '#0d0a0c', '#d4a64a', 'wood_panel', '#d4a64a'), // 1: reservado VIP
+  V('#1e1619', '#2a0a12', '#0d0a0c', '#ff3fa4', 'brick', '#ff3fa4'), // 2: barra
+  V('#6e1a30', '#8c2240', '#1e1619', '#d4a64a', 'stripes', '#ff3fa4'), // 3: salón de sofás
+  V('#5a1426', '#2a0a12', '#0d0a0c', '#d4a64a', 'plain', '#ffe08a'), // 4: vestíbulo con telón
+  V('#2a0a12', '#1e1619', '#1e1619', '#ff8fcf', 'plain', '#ff8fcf'), // 5: camerinos privados
+  V('#5a1426', '#8c2240', '#0d0a0c', '#ff3fa4', 'stripes', '#ff3fa4'), // 6: La Voûte (cabina)
 ];
+
+/** Superficies cabaret por sala (spec Barbie 11/11/2026), reemplazan a THEMES con el modo Voûte. */
+export const VOUTE_THEMES = Object.assign(VOUTE_LIST, {
+  camarin: VOUTE_LIST[0],
+  vip: VOUTE_LIST[1],
+  barra: VOUTE_LIST[2],
+  salon: VOUTE_LIST[3],
+  vestibulo: VOUTE_LIST[4],
+  camerinos: VOUTE_LIST[5],
+  cabina: VOUTE_LIST[6],
+});
 const VOUTE_ROOM: Readonly<Record<string, number>> = { 'voute:camarin': 0, 'voute:vip': 1, 'voute:barra': 2, 'voute:salon': 3, 'voute:cabina': 6 };
 
 export const THEME_COUNT = THEMES.length;

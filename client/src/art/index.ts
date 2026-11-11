@@ -32,6 +32,7 @@ import { CHUNK_PX, floorChunk } from './surfaces/floor';
 import { WALL_CAP_H, WALL_FACE_H, capColor, southWallTile, wallFaceTile } from './surfaces/walls';
 import { renderRug } from './surfaces/rug';
 import { roomTheme as roomThemePure } from './theme';
+import { isVoute } from './voute';
 
 export * from './api';
 export { hash32 };
@@ -136,7 +137,7 @@ export function avatarCanvas(seed: number, opts: { look?: 'f' | 'm'; sub?: boole
 export function furnitureSprites(kind: FurnitureKind, variant?: string, state?: number, opts: { seed?: number } = {}): FurnitureSprites {
   // Chave normalizada: sementes/variantes equivalentes compartilham o mesmo canvas.
   const n = normalizeFurniture(kind, variant, state, opts.seed);
-  const key = `${kind}|${n.variant ?? '-'}|${n.state}|${n.vseed}`;
+  const key = `${isVoute() ? 'v|' : ''}${kind}|${n.variant ?? '-'}|${n.state}|${n.vseed}`;
   return furnCache.get(key, () => {
     const f = renderFurniture(kind, n.variant, n.state, n.vseed);
     return { base: toSprite(f.base), front: f.front ? toSprite(f.front) : undefined };
@@ -147,8 +148,8 @@ export function iconSprite(name: IconName): Sprite {
   return iconCache.get(name, () => toSprite(renderIcon(name)));
 }
 
-export function roomTheme(seed: number): RoomTheme {
-  return roomThemePure(seed);
+export function roomTheme(seed: number, id?: string): RoomTheme {
+  return roomThemePure(seed, id);
 }
 
 // ------------------------------------------------------------------ pisos, tapetes e paredes
@@ -175,9 +176,10 @@ export function drawFloor(
   const cy0 = Math.floor(y / CHUNK_PX);
   const cx1 = Math.ceil((x + w) / CHUNK_PX);
   const cy1 = Math.ceil((y + h) / CHUNK_PX);
+  const vTag = isVoute() ? 'v|' : '';
   for (let cy = cy0; cy < cy1; cy++) {
     for (let cx = cx0; cx < cx1; cx++) {
-      const key = `f|${kind}|${opts.seed}|${opts.tint ?? ''}|${opts.tint2 ?? ''}|${cx}|${cy}`;
+      const key = `${vTag}f|${kind}|${opts.seed}|${opts.tint ?? ''}|${opts.tint2 ?? ''}|${cx}|${cy}`;
       const chunk = floorCache.get(key, () => toCanvas(floorChunk(kind, cx, cy, opts)));
       const px = cx * CHUNK_PX;
       const py = cy * CHUNK_PX;
@@ -194,13 +196,13 @@ export function drawFloor(
 export function drawRug(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, seed: number): void {
   const rw = Math.max(4, Math.round(w));
   const rh = Math.max(4, Math.round(h));
-  const key = `${rw}|${rh}|${color}|${seed}`;
+  const key = `${isVoute() ? 'v|' : ''}${rw}|${rh}|${color}|${seed}`;
   const c = rugCache.get(key, () => toCanvas(renderRug(rw, rh, color, seed)));
   ctx.drawImage(c, Math.round(x), Math.round(y));
 }
 
 function styleKey(s: WallStyle): string {
-  return `${s.base}|${s.trim ?? ''}|${s.pattern ?? 'plain'}|${s.exterior ? 1 : 0}`;
+  return `${isVoute() ? 'v|' : ''}${s.base}|${s.trim ?? ''}|${s.pattern ?? 'plain'}|${s.exterior ? 1 : 0}`;
 }
 
 /** Trechos [x0, x1) da parede que não estão em passagens. */

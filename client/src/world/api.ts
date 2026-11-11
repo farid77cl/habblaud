@@ -2,6 +2,8 @@
 // Implementação: client/src/world/index.ts -> createWorld().
 // Regra: mudanças aqui devem ser ADITIVAS.
 
+import { isVoute } from '../art/voute';
+
 export type Selection = { type: 'agent'; id: string } | { type: 'room'; id: string } | null;
 
 export interface WorldOptions {
@@ -30,6 +32,7 @@ export type OfficeTheme = 'auto' | SeasonalTheme;
  * 26 de dezembro e, no resto do ano, o escritório original.
  */
 export function seasonalThemeFor(theme: OfficeTheme | undefined, date: Date): SeasonalTheme {
+  if (isVoute()) return 'none';
   if (theme && theme !== 'auto') return theme;
   const month = date.getMonth();
   if (month === 9) return 'halloween';
@@ -98,6 +101,8 @@ export interface WorldApi {
    * câmera; ao voltar, a simulação avança o tempo que passou (como com a aba em segundo plano).
    */
   setSuspended?(suspended: boolean): void;
+  /** (Opcional, aditivo) Reconstrói simulação e renderizador (ex.: ao alternar o modo cabaré La Voûte). */
+  rebuild?(): void;
   destroy(): void;
 }
 

@@ -4,6 +4,7 @@ import { TILE, type WallPattern, type WallStyle } from '../api';
 import { mix, ramp, shade } from '../core/color';
 import { PixelBuf } from '../core/pixbuf';
 import { rngOf } from '../furniture/kit';
+import { VP, isVoute } from '../voute';
 
 function speckle(b: PixelBuf, seed: number, n: number, colors: readonly string[]): void {
   const r = rngOf(seed, 91);
@@ -21,15 +22,17 @@ export const BASEBOARD_H = 3;
 
 /** Cor da tampa (topo da parede), levemente tingida pela cor da parede. */
 export function capColor(style: WallStyle): string {
+  if (isVoute()) return mix('#12090e', style.base, 0.2);
   return mix(style.exterior ? '#4a4f5c' : '#3d4356', style.base, 0.1);
 }
 
 /** Coluna de 16x32 da face da parede norte (tampa + padrão + rodapé). */
 export function wallFaceTile(style: WallStyle, variant: number, col: number): PixelBuf {
+  const voute = isVoute();
   const b = new PixelBuf(TILE, WALL_FACE_H);
   const base = style.base;
   const pattern: WallPattern = style.pattern ?? 'plain';
-  const trim = style.trim ?? shade(base, -0.16);
+  const trim = voute ? (style.trim ?? VP.or) : (style.trim ?? shade(base, -0.16));
   const cap = capColor(style);
   const fy = WALL_CAP_H;
   const fh = WALL_FACE_H - WALL_CAP_H - BASEBOARD_H;
@@ -58,14 +61,14 @@ export function wallFaceTile(style: WallStyle, variant: number, col: number): Pi
     }
     case 'wood_panel': {
       // Lambri de madeira na metade de baixo com friso; metade de cima lisa.
-      const w = ramp(mix('#b98a5e', base, 0.15), 0.04);
+      const w = ramp(mix(voute ? '#3a0f1e' : '#b98a5e', base, 0.2), 0.04);
       const top = fy + Math.floor(fh * 0.45);
       b.rect(0, top, TILE, fy + fh - top, w.base);
       for (let x = 0; x < TILE; x += 4) {
         b.vline(x, top, fy + fh - 1, w.dk);
         b.vline(x + 1, top + 1, fy + fh - 1, w.lt);
       }
-      b.hline(0, TILE - 1, top - 1, w.hi);
+      b.hline(0, TILE - 1, top - 1, voute ? VP.or : w.hi);
       b.hline(0, TILE - 1, top, w.lt);
       b.hline(0, TILE - 1, top + 1, w.dk);
       break;
@@ -73,7 +76,7 @@ export function wallFaceTile(style: WallStyle, variant: number, col: number): Pi
     case 'brick': {
       // Tijolos 8x4 (com argamassa) em fileiras desencontradas; tom por tijolo, aresta de cima clara.
       const brick = ramp(base, 0.035);
-      const mortar = mix(base, '#e9e4dc', 0.5);
+      const mortar = mix(base, voute ? '#12090e' : '#e9e4dc', 0.5);
       for (let row = 0; row * 4 < fh; row++) {
         const y = fy + row * 4;
         const off = row % 2 ? 4 : 0;
@@ -92,28 +95,28 @@ export function wallFaceTile(style: WallStyle, variant: number, col: number): Pi
     case 'glass': {
       // Parede de vidro: face translúcida com montantes; o mundo vê através.
       b.clearRect(0, fy, TILE, fh);
-      b.rect(0, fy, TILE, fh, 'rgba(175,215,238,0.38)');
-      b.vline(0, fy, fy + fh - 1, 'rgba(195,202,212,0.95)');
-      b.hline(0, TILE - 1, fy, 'rgba(255,255,255,0.45)');
+      b.rect(0, fy, TILE, fh, voute ? 'rgba(107,22,48,0.42)' : 'rgba(175,215,238,0.38)');
+      b.vline(0, fy, fy + fh - 1, voute ? 'rgba(212,166,74,0.85)' : 'rgba(195,202,212,0.95)');
+      b.hline(0, TILE - 1, fy, voute ? 'rgba(255,224,138,0.45)' : 'rgba(255,255,255,0.45)');
       for (let i = 0; i < fh; i++) {
         const x = (col * 5 + 11 - i) & 15;
-        b.set(x, fy + i, 'rgba(255,255,255,0.35)');
-        b.set((x + 1) & 15, fy + i, 'rgba(255,255,255,0.18)');
+        b.set(x, fy + i, voute ? 'rgba(255,154,213,0.32)' : 'rgba(255,255,255,0.35)');
+        b.set((x + 1) & 15, fy + i, voute ? 'rgba(255,224,138,0.18)' : 'rgba(255,255,255,0.18)');
       }
       break;
     }
     case 'marble': {
-      // Frontão de mármore cinza (copa): placas com veios.
-      const m = mix('#c9cdd3', base, 0.25);
+      // Frontão de mármore cinza (copa) ou bordeaux escuro (La Voûte): placas com veios.
+      const m = mix(voute ? '#2a0a12' : '#c9cdd3', base, 0.25);
       b.rect(0, fy, TILE, fh, m);
       for (let v = 0; v < 2; v++) {
         let x = r() * TILE;
         for (let y = 0; y < fh; y++) {
-          b.set(Math.floor(x) & 15, fy + y, v ? 'rgba(120,126,138,0.4)' : 'rgba(250,250,252,0.55)');
+          b.set(Math.floor(x) & 15, fy + y, v ? 'rgba(120,126,138,0.4)' : (voute ? 'rgba(212,166,74,0.45)' : 'rgba(250,250,252,0.55)'));
           x += (r() - 0.35) * 1.4;
         }
       }
-      for (let i = 0; i < 8; i++) b.set(Math.floor(r() * TILE), fy + Math.floor(r() * fh), r() < 0.5 ? '#d8dbe0' : '#b8bdc6');
+      for (let i = 0; i < 8; i++) b.set(Math.floor(r() * TILE), fy + Math.floor(r() * fh), r() < 0.5 ? (voute ? '#3a0f1e' : '#d8dbe0') : (voute ? '#1b0910' : '#b8bdc6'));
       b.hline(0, TILE - 1, fy + Math.floor(fh / 2), 'rgba(120,126,138,0.35)');
       if (col % 2 === 1) b.vline(TILE - 1, fy, fy + fh - 1, 'rgba(120,126,138,0.35)');
       break;
@@ -121,6 +124,11 @@ export function wallFaceTile(style: WallStyle, variant: number, col: number): Pi
     case 'plain':
       if (style.exterior) speckle(b, variant * 13 + col, 5, [shade(base, -0.03), shade(base, 0.03)]);
       break;
+  }
+  // Apliques de luz cálida en modo La Voûte (cada 4 columnas en paredes interiores).
+  if (voute && pattern !== 'glass' && !style.exterior && variant === 0 && col % 4 === 0) {
+    b.rect(6, fy + 4, 4, 2, VP.ol);
+    b.rect(7, fy + 6, 2, 3, VP.or);
   }
   // Sombra projetada pela tampa.
   if (pattern !== 'glass') b.hline(0, TILE - 1, fy, shade(base, -0.06));
@@ -130,14 +138,15 @@ export function wallFaceTile(style: WallStyle, variant: number, col: number): Pi
   b.hline(0, TILE - 1, WALL_CAP_H - 1, shade(cap, -0.06));
   // Rodapé.
   const by = WALL_FACE_H - BASEBOARD_H;
-  b.rect(0, by, TILE, BASEBOARD_H, trim);
-  b.hline(0, TILE - 1, by, shade(trim, 0.08));
-  b.hline(0, TILE - 1, WALL_FACE_H - 1, shade(trim, -0.08));
+  b.rect(0, by, TILE, BASEBOARD_H, voute ? VP.or : trim);
+  b.hline(0, TILE - 1, by, voute ? VP.ol : shade(trim, 0.08));
+  b.hline(0, TILE - 1, WALL_FACE_H - 1, shade(voute ? VP.or : trim, -0.08));
   return b;
 }
 
 /** Tile de 16x16 da parede sul (tampa + mureta). */
 export function southWallTile(style: WallStyle, col: number): PixelBuf {
+  const voute = isVoute();
   const b = new PixelBuf(TILE, TILE);
   const cap = capColor(style);
   const capH = 6;
@@ -147,9 +156,9 @@ export function southWallTile(style: WallStyle, col: number): PixelBuf {
   const face = shade(style.base, -0.05);
   b.rect(0, capH, TILE, TILE - capH, face);
   b.hline(0, TILE - 1, capH, shade(face, -0.06));
-  const trim = style.trim ?? shade(style.base, -0.16);
+  const trim = voute ? (style.trim ?? VP.or) : (style.trim ?? shade(style.base, -0.16));
   b.rect(0, TILE - 2, TILE, 2, trim);
-  b.hline(0, TILE - 1, TILE - 2, shade(trim, 0.06));
+  b.hline(0, TILE - 1, TILE - 2, voute ? VP.ol : shade(trim, 0.06));
   if (style.pattern === 'brick' || style.exterior) {
     for (let y = capH + 2; y < TILE - 2; y += 3) b.hline(0, TILE - 1, y, shade(face, -0.035));
   }

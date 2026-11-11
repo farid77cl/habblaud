@@ -253,7 +253,7 @@ export class Sim {
   private createRoom(r: RoomInfo, first: boolean, now: number): RoomState {
     let theme = FALLBACK_THEME;
     try {
-      theme = this.art.roomTheme(r.seed) ?? FALLBACK_THEME;
+      theme = this.art.roomTheme(r.seed, r.id) ?? FALLBACK_THEME;
     } catch {
       theme = FALLBACK_THEME;
     }

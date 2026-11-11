@@ -1,6 +1,7 @@
 // Sprites procedurais da área externa (árvores, arbustos, postes, carros...) e utilitários
 // visuais do mundo (sombra, brilhos). Mesma direção de arte do módulo de arte: contorno
 // cinza-azulado escuro, 3–4 tons por material, luz vinda de cima/esquerda.
+import { VP, isVoute } from '../../art/voute';
 import { mulberry32 } from '../../../../shared/hash';
 import type { ExteriorProp } from '../layout/types';
 
@@ -13,11 +14,47 @@ export interface PropSprite {
 const cache = new Map<string, PropSprite>();
 
 function makeCanvas(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext('2d')!;
-  ctx.imageSmoothingEnabled = false;
+  if (typeof document !== 'undefined') {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    const ctx = c.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+    return [c, ctx];
+  }
+  // Fallback puro para ambientes Node / vitest sem DOM.
+  const data = new Uint8ClampedArray(w * h * 4);
+  const ctx = {
+    imageSmoothingEnabled: false,
+    fillStyle: '#000000' as string | CanvasGradient,
+    fillRect(x: number, y: number, rw: number, rh: number) {
+      const x0 = Math.max(0, Math.floor(x));
+      const y0 = Math.max(0, Math.floor(y));
+      const x1 = Math.min(w, Math.floor(x + rw));
+      const y1 = Math.min(h, Math.floor(y + rh));
+      for (let yy = y0; yy < y1; yy++) {
+        for (let xx = x0; xx < x1; xx++) {
+          const i = (yy * w + xx) * 4;
+          data[i] = 255;
+          data[i + 1] = 200;
+          data[i + 2] = 220;
+          data[i + 3] = 255;
+        }
+      }
+    },
+    getImageData(_x: number, _y: number, iw: number, ih: number) {
+      return { data: new Uint8ClampedArray(iw * ih * 4), width: iw, height: ih } as unknown as ImageData;
+    },
+    putImageData(img: ImageData) {
+      data.set(img.data.subarray(0, data.length));
+    },
+    translate() {},
+    scale() {},
+    createRadialGradient() {
+      return { addColorStop() {} } as unknown as CanvasGradient;
+    },
+  } as unknown as CanvasRenderingContext2D;
+  const c = { width: w, height: h, getContext: () => ctx } as unknown as HTMLCanvasElement;
   return [c, ctx];
 }
 
@@ -34,7 +71,6 @@ class Painter {
     readonly w: number,
     readonly h: number,
   ) {
-    // parte do conteúdo já desenhado (ex.: sombra) para não apagá-lo no putImageData
     this.data = ctx.getImageData(0, 0, w, h);
   }
   set(x: number, y: number, color: string, a = 255): void {
@@ -84,7 +120,6 @@ function canopy(p: Painter, rng: () => number, cx: number, cy: number, r: number
         p.set(x, y, outline);
         continue;
       }
-      // luz: topo-esquerda mais claro; ruído para "folhas"
       const nx = (x - cx) / r;
       const ny = (y - cy) / r;
       const light = -nx * 0.45 - ny * 0.75 + (rng() - 0.5) * 0.55;
@@ -99,7 +134,6 @@ function treeSprite(seed: number): PropSprite {
   const [c, ctx] = makeCanvas(36, 48);
   shadowEllipse(ctx, 18, 45, 12, 3, 0.25);
   const p = new Painter(ctx, 36, 48);
-  // tronco
   for (let y = 30; y < 46; y++) {
     for (let x = 16; x < 21; x++) {
       const col = x === 16 ? '#8a6243' : x === 20 ? '#4a3222' : '#6b4a32';
@@ -148,7 +182,6 @@ function bushSprite(seed: number): PropSprite {
   shadowEllipse(ctx, 11, 14, 9, 2, 0.22);
   const p = new Painter(ctx, 22, 16);
   canopy(p, rng, 11, 9, 6, ['#34663f', '#47864c', '#62a45a', '#8cc66f'], '#264a36');
-  // florzinhas
   if (rng() < 0.6) {
     const col = ['#f2d14b', '#f28aa5', '#ffffff'][Math.floor(rng() * 3)];
     for (let i = 0; i < 4; i++) p.set(6 + Math.floor(rng() * 10), 5 + Math.floor(rng() * 6), col);
@@ -161,7 +194,6 @@ function flowersSprite(seed: number): PropSprite {
   const rng = mulberry32(seed);
   const [c, ctx] = makeCanvas(30, 14);
   const p = new Painter(ctx, 30, 14);
-  // canteiro: borda de pedra + terra
   for (let y = 4; y < 13; y++) {
     for (let x = 1; x < 29; x++) {
       const border = y === 4 || y === 12 || x === 1 || x === 28;
@@ -200,6 +232,24 @@ function hedgeSprite(seed: number): PropSprite {
 function lampSprite(): PropSprite {
   const [c, ctx] = makeCanvas(10, 36);
   shadowEllipse(ctx, 5, 34, 4, 1, 0.25);
+  if (isVoute()) {
+    // Farol parisino en hierro negro y latón dorado con luz cálida #ffe08a
+    ctx.fillStyle = '#1b161e';
+    ctx.fillRect(4, 6, 2, 28);
+    ctx.fillStyle = VP.or;
+    ctx.fillRect(4, 6, 1, 28);
+    ctx.fillStyle = '#1b161e';
+    ctx.fillRect(1, 2, 8, 5);
+    ctx.fillStyle = VP.or;
+    ctx.fillRect(2, 2, 6, 1);
+    ctx.fillStyle = VP.ol;
+    ctx.fillRect(2, 4, 6, 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(4, 4, 2, 1);
+    ctx.fillStyle = VP.or;
+    ctx.fillRect(3, 32, 4, 2);
+    return { canvas: c, ax: 5, ay: 34 };
+  }
   ctx.fillStyle = '#2e3648';
   ctx.fillRect(4, 6, 2, 28);
   ctx.fillStyle = '#4a5468';
@@ -221,7 +271,6 @@ function benchSprite(): PropSprite {
   ctx.fillStyle = '#2e3648';
   ctx.fillRect(3, 8, 2, 4);
   ctx.fillRect(21, 8, 2, 4);
-  // encosto e assento em ripas
   ctx.fillStyle = '#7a5232';
   ctx.fillRect(1, 1, 24, 3);
   ctx.fillRect(1, 6, 24, 3);
@@ -243,7 +292,6 @@ function rockSprite(seed: number): PropSprite {
   return { canvas: c, ax: 8, ay: 11 };
 }
 
-/** Mesa de jardim com guarda-sol listrado (vista de cima, 3/4) e duas cadeirinhas. */
 function parasolSprite(seed: number): PropSprite {
   const [c, ctx] = makeCanvas(32, 34);
   const palettes: [string, string, string][] = [
@@ -252,9 +300,7 @@ function parasolSprite(seed: number): PropSprite {
     ['#f2b33d', '#fbf4e4', '#c88a1f'],
   ];
   const [a, b, dk] = palettes[seed % palettes.length];
-  // sombra do guarda-sol no chão
   shadowEllipse(ctx, 16, 29, 12, 3, 0.24);
-  // cadeirinhas (laterais) e mesa
   ctx.fillStyle = '#5b3c25';
   ctx.fillRect(2, 24, 6, 5);
   ctx.fillRect(24, 24, 6, 5);
@@ -267,10 +313,8 @@ function parasolSprite(seed: number): PropSprite {
   ctx.fillRect(10, 24, 12, 2);
   ctx.fillStyle = '#8d96a3';
   ctx.fillRect(10, 28, 12, 1);
-  // haste
   ctx.fillStyle = '#4a5468';
   ctx.fillRect(15, 11, 2, 14);
-  // lona: octógono achatado com gomos alternados e borda escura
   const p = new Painter(ctx, 32, 34);
   const cx = 15.5;
   const cy = 8;
@@ -293,7 +337,6 @@ function parasolSprite(seed: number): PropSprite {
   return { canvas: c, ax: 16, ay: 29 };
 }
 
-/** Totem da entrada com a marca (azul-marinho e laranja, como a placa da recepção). */
 function totemSprite(): PropSprite {
   const [c, ctx] = makeCanvas(14, 34);
   shadowEllipse(ctx, 7, 32, 6, 1.5, 0.25);
@@ -303,7 +346,6 @@ function totemSprite(): PropSprite {
   ctx.fillRect(3, 3, 8, 28);
   ctx.fillStyle = '#2a355a';
   ctx.fillRect(3, 3, 1, 28);
-  // faixa laranja no topo, "H" claro e "b" laranja (as cores de "Hab" e "blaud" na placa)
   ctx.fillStyle = '#f2a33a';
   ctx.fillRect(3, 5, 8, 2);
   ctx.fillStyle = '#f5f1e6';
@@ -315,14 +357,157 @@ function totemSprite(): PropSprite {
   ctx.fillRect(6, 21, 2, 1);
   ctx.fillRect(8, 22, 1, 2);
   ctx.fillRect(6, 24, 2, 1);
-  // base
   ctx.fillStyle = '#8d96a3';
   ctx.fillRect(1, 31, 12, 2);
   return { canvas: c, ax: 7, ay: 32 };
 }
 
-export function propSprite(prop: ExteriorProp): PropSprite {
-  const key = prop.kind === 'lamp' || prop.kind === 'bench' || prop.kind === 'totem' ? prop.kind : `${prop.kind}:${prop.seed % 7}`;
+/** Cartel luminoso de neón "LA VOÛTE" en rosa neón (#ff3fa4) y marco dorado (#d4a64a). */
+function neonSignSprite(): PropSprite {
+  const [c, ctx] = makeCanvas(64, 24);
+  shadowEllipse(ctx, 32, 22, 26, 2, 0.3);
+  // Respaldo metálico oscuro y marco de latón dorado
+  ctx.fillStyle = '#160912';
+  ctx.fillRect(2, 2, 60, 18);
+  ctx.fillStyle = VP.or;
+  ctx.fillRect(2, 2, 60, 2);
+  ctx.fillRect(2, 18, 60, 2);
+  ctx.fillRect(2, 2, 2, 18);
+  ctx.fillRect(60, 2, 2, 18);
+  // Bombillas cálidas en las esquinas
+  ctx.fillStyle = VP.ol;
+  for (const bx of [4, 16, 32, 48, 58]) {
+    ctx.fillRect(bx, 2, 2, 1);
+    ctx.fillRect(bx, 19, 2, 1);
+  }
+  // Tubos de neón "LA VOÛTE" en #ff3fa4 con núcleo brillante #ff9ad5
+  ctx.fillStyle = VP.rn;
+  // L A
+  ctx.fillRect(7, 7, 2, 8);
+  ctx.fillRect(7, 13, 5, 2);
+  ctx.fillRect(14, 7, 5, 8);
+  ctx.fillStyle = '#160912';
+  ctx.fillRect(15, 9, 3, 2);
+  ctx.fillRect(15, 12, 3, 3);
+  // V O Û T E
+  ctx.fillStyle = VP.rn;
+  ctx.fillRect(23, 7, 2, 6);
+  ctx.fillRect(27, 7, 2, 6);
+  ctx.fillRect(25, 13, 2, 2);
+  ctx.fillRect(31, 7, 6, 8);
+  ctx.fillStyle = '#160912';
+  ctx.fillRect(33, 9, 2, 4);
+  ctx.fillStyle = VP.rn;
+  ctx.fillRect(39, 7, 6, 8);
+  ctx.fillStyle = '#160912';
+  ctx.fillRect(41, 7, 2, 6);
+  ctx.fillStyle = VP.ol;
+  ctx.fillRect(41, 5, 2, 1); // acento circunflejo ^
+  ctx.fillStyle = VP.rn;
+  ctx.fillRect(47, 7, 6, 2);
+  ctx.fillRect(49, 7, 2, 8);
+  ctx.fillRect(55, 7, 5, 2);
+  ctx.fillRect(55, 10, 4, 2);
+  ctx.fillRect(55, 13, 5, 2);
+  ctx.fillRect(55, 7, 2, 8);
+  // Brillo central de neón #ff9ad5
+  ctx.fillStyle = VP.rg;
+  ctx.fillRect(8, 8, 1, 5);
+  ctx.fillRect(24, 8, 1, 4);
+  ctx.fillRect(32, 8, 4, 1);
+  ctx.fillRect(50, 8, 1, 6);
+  return { canvas: c, ax: 32, ay: 22 };
+}
+
+/** Cuerda de terciopelo carmesí (#8c2240) entre dos postes de latón dorado (#d4a64a). */
+function velvetRopeSprite(): PropSprite {
+  const [c, ctx] = makeCanvas(28, 16);
+  shadowEllipse(ctx, 14, 14, 12, 2, 0.25);
+  // Cuerda colgante en catenaria carmesí
+  ctx.fillStyle = VP.b5;
+  ctx.fillRect(5, 6, 4, 2);
+  ctx.fillRect(9, 7, 10, 2);
+  ctx.fillRect(19, 6, 4, 2);
+  ctx.fillStyle = VP.rn;
+  ctx.fillRect(10, 7, 8, 1);
+  // Dos postes dorados con remate esférico brillante
+  for (const px of [3, 22]) {
+    ctx.fillStyle = VP.or;
+    ctx.fillRect(px, 3, 2, 10);
+    ctx.fillStyle = VP.ol;
+    ctx.fillRect(px, 2, 2, 2);
+    ctx.fillStyle = '#9a7228';
+    ctx.fillRect(px - 1, 12, 4, 2);
+  }
+  return { canvas: c, ax: 14, ay: 14 };
+}
+
+/** Limusina negra alargada (#100e14) con moldura dorada (#d4a64a) y faros cálidos (#ffe08a). */
+function carLimoSprite(): PropSprite {
+  const [c, ctx] = makeCanvas(52, 20);
+  shadowEllipse(ctx, 26, 17, 24, 2, 0.34);
+  ctx.fillStyle = '#08060c';
+  ctx.fillRect(2, 8, 48, 8);
+  ctx.fillRect(10, 3, 30, 6);
+  ctx.fillStyle = '#100e14';
+  ctx.fillRect(3, 9, 46, 6);
+  ctx.fillRect(11, 4, 28, 5);
+  // Filete dorado lateral
+  ctx.fillStyle = VP.or;
+  ctx.fillRect(3, 11, 46, 1);
+  // Cristales tintados oscuros con reflejo cálido
+  ctx.fillStyle = '#241428';
+  ctx.fillRect(12, 5, 8, 3);
+  ctx.fillRect(22, 5, 8, 3);
+  ctx.fillRect(32, 5, 6, 3);
+  ctx.fillStyle = VP.ol;
+  ctx.fillRect(48, 10, 2, 2);
+  ctx.fillStyle = VP.rn;
+  ctx.fillRect(2, 10, 2, 2);
+  for (const wx of [8, 40]) {
+    ctx.fillStyle = '#08060c';
+    ctx.fillRect(wx, 13, 5, 5);
+    ctx.fillStyle = VP.or;
+    ctx.fillRect(wx + 1, 14, 3, 3);
+  }
+  return { canvas: c, ax: 26, ay: 17 };
+}
+
+/** Taxi nocturno (#d4a64a / #100e14) con cartel luminoso en el techo (#ffe08a). */
+function carTaxiSprite(): PropSprite {
+  const [c, ctx] = makeCanvas(36, 20);
+  shadowEllipse(ctx, 18, 17, 16, 2, 0.3);
+  ctx.fillStyle = '#100e14';
+  ctx.fillRect(2, 8, 32, 8);
+  ctx.fillRect(8, 3, 18, 6);
+  ctx.fillStyle = VP.or;
+  ctx.fillRect(3, 9, 30, 4);
+  ctx.fillRect(9, 4, 16, 5);
+  // Letrero luminoso TAXI en el techo
+  ctx.fillStyle = VP.ol;
+  ctx.fillRect(15, 1, 6, 2);
+  // Ventanillas
+  ctx.fillStyle = '#241428';
+  ctx.fillRect(10, 5, 6, 3);
+  ctx.fillRect(18, 5, 6, 3);
+  ctx.fillStyle = VP.ol;
+  ctx.fillRect(32, 10, 2, 2);
+  ctx.fillStyle = VP.rn;
+  ctx.fillRect(2, 10, 2, 2);
+  for (const wx of [7, 25]) {
+    ctx.fillStyle = '#100e14';
+    ctx.fillRect(wx, 13, 5, 5);
+    ctx.fillStyle = VP.or;
+    ctx.fillRect(wx + 1, 14, 3, 3);
+  }
+  return { canvas: c, ax: 18, ay: 17 };
+}
+
+export function propSprite(propOrKind: ExteriorProp | ExteriorProp['kind']): PropSprite {
+  const prop: ExteriorProp = typeof propOrKind === 'string' ? { kind: propOrKind, x: 0, y: 0, seed: 1 } : propOrKind;
+  const vPrefix = isVoute() ? 'v|' : '';
+  const singletons = new Set(['lamp', 'bench', 'totem', 'neon_sign', 'velvet_rope', 'car_limo', 'car_taxi']);
+  const key = `${vPrefix}${singletons.has(prop.kind) ? prop.kind : `${prop.kind}:${prop.seed % 7}`}`;
   let s = cache.get(key);
   if (s) return s;
   switch (prop.kind) {
@@ -356,8 +541,19 @@ export function propSprite(prop: ExteriorProp): PropSprite {
     case 'totem':
       s = totemSprite();
       break;
+    case 'neon_sign':
+      s = neonSignSprite();
+      break;
+    case 'velvet_rope':
+      s = velvetRopeSprite();
+      break;
+    case 'car_limo':
+      s = carLimoSprite();
+      break;
+    case 'car_taxi':
+      s = carTaxiSprite();
+      break;
     default:
-      // 'paving' e outros tipos desenhados pelo próprio renderer
       s = { canvas: makeCanvas(1, 1)[0], ax: 0, ay: 0 };
   }
   cache.set(key, s);
@@ -373,20 +569,27 @@ const CAR_COLORS: [string, string, string][] = [
   ['#4a5468', '#323a4a', '#76819a'],
 ];
 
+const VOUTE_CAR_COLORS: [string, string, string][] = [
+  ['#100e14', '#08060a', '#d4a64a'],
+  ['#d4a64a', '#9a7228', '#ffe08a'],
+  ['#2a0a12', '#16060b', '#8c2240'],
+];
+
 /** Carro visto de lado (3/4), virado para a direita; `flip` desenha para a esquerda. */
 export function carSprite(variant: number, flip: boolean): PropSprite {
-  const key = `car:${variant % CAR_COLORS.length}:${flip ? 1 : 0}`;
+  const voute = isVoute();
+  const palette = voute ? VOUTE_CAR_COLORS : CAR_COLORS;
+  const key = `${voute ? 'v|' : ''}car:${variant % palette.length}:${flip ? 1 : 0}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const [body, dark, light] = CAR_COLORS[variant % CAR_COLORS.length];
+  const [body, dark, light] = palette[variant % palette.length];
   const [c, ctx] = makeCanvas(36, 20);
   if (flip) {
     ctx.translate(36, 0);
     ctx.scale(-1, 1);
   }
   shadowEllipse(ctx, 18, 17, 16, 2, 0.3);
-  const o = '#2e3648';
-  // carroceria
+  const o = voute ? '#08060a' : '#2e3648';
   ctx.fillStyle = o;
   ctx.fillRect(2, 8, 32, 8);
   ctx.fillRect(8, 3, 18, 6);
@@ -398,25 +601,22 @@ export function carSprite(variant: number, flip: boolean): PropSprite {
   ctx.fillRect(9, 4, 16, 1);
   ctx.fillStyle = dark;
   ctx.fillRect(3, 13, 30, 2);
-  // vidros
-  ctx.fillStyle = '#3a5f86';
+  ctx.fillStyle = voute ? '#241428' : '#3a5f86';
   ctx.fillRect(10, 5, 6, 3);
   ctx.fillRect(18, 5, 6, 3);
-  ctx.fillStyle = '#9cc7ec';
+  ctx.fillStyle = voute ? VP.ol : '#9cc7ec';
   ctx.fillRect(10, 5, 2, 1);
   ctx.fillRect(18, 5, 2, 1);
-  // farol e lanterna
-  ctx.fillStyle = '#fff3c4';
+  ctx.fillStyle = voute ? VP.ol : '#fff3c4';
   ctx.fillRect(32, 10, 2, 2);
-  ctx.fillStyle = '#e04a3a';
+  ctx.fillStyle = voute ? VP.rn : '#e04a3a';
   ctx.fillRect(2, 10, 1, 2);
-  // rodas
   for (const wx of [7, 25]) {
     ctx.fillStyle = o;
     ctx.fillRect(wx, 13, 5, 5);
-    ctx.fillStyle = '#6b7385';
+    ctx.fillStyle = voute ? VP.or : '#6b7385';
     ctx.fillRect(wx + 1, 14, 3, 3);
-    ctx.fillStyle = '#9aa3b5';
+    ctx.fillStyle = voute ? VP.ol : '#9aa3b5';
     ctx.fillRect(wx + 2, 15, 1, 1);
   }
   const s = { canvas: c, ax: 18, ay: 17 };

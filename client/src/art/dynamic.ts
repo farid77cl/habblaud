@@ -2,6 +2,7 @@
 // Regras: só fillRect com coordenadas inteiras (barato), sem getImageData e sem criar canvases.
 import type { Rect, ScreenMode } from './api';
 import { mix } from './core/color';
+import { VP, isVoute } from './voute';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -676,6 +677,7 @@ function skyAt(hour: number): { top: string; bottom: string; night: number; day:
 }
 
 export function drawWindowView(ctx: Ctx, r: Rect, hour: number, t: number, seed: number): void {
+  if (isVoute()) hour = 23;
   const x = Math.round(r.x);
   const y = Math.round(r.y);
   const w = Math.round(r.w);
@@ -778,8 +780,9 @@ export function drawClock(ctx: Ctx, r: Rect, date: Date): void {
     }
   };
   const size = Math.min(r.w, r.h);
-  hand((hr / 12) * Math.PI * 2, size * 0.26, '#2b2f3b');
-  hand((min / 60) * Math.PI * 2, size * 0.4, '#3a3f4b');
-  hand((sec / 60) * Math.PI * 2, size * 0.38, 'rgba(224,90,90,0.85)');
-  fill(ctx, Math.floor(cx), Math.floor(cy), 1, 1, '#e05a5a');
+  const voute = isVoute();
+  hand((hr / 12) * Math.PI * 2, size * 0.26, voute ? VP.ol : '#2b2f3b');
+  hand((min / 60) * Math.PI * 2, size * 0.4, voute ? VP.or : '#3a3f4b');
+  hand((sec / 60) * Math.PI * 2, size * 0.38, voute ? VP.rn : 'rgba(224,90,90,0.85)');
+  fill(ctx, Math.floor(cx), Math.floor(cy), 1, 1, voute ? VP.rn : '#e05a5a');
 }

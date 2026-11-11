@@ -274,7 +274,8 @@ export type FloorKind =
   | 'marble' // recepção
   | 'grass' // área externa
   | 'sidewalk' // calçada externa
-  | 'street'; // rua externa (faixas desenhadas pelo render se quiser)
+  | 'street' // rua externa (faixas desenhadas pelo render se quiser)
+  | 'asphalt'; // asfalto noturno (La Voûte)
 
 export type WallPattern = 'plain' | 'stripes' | 'tiles' | 'wood_panel' | 'brick' | 'glass' | 'marble';
 
@@ -364,7 +365,7 @@ export interface ArtModule {
   /** Céu + horizonte visto pela janela conforme a hora local (0–24, fracionária). */
   drawWindowView(ctx: CanvasRenderingContext2D, r: Rect, hour: number, t: number, seed: number): void;
   drawClock(ctx: CanvasRenderingContext2D, r: Rect, date: Date): void;
-  roomTheme(seed: number): RoomTheme;
+  roomTheme(seed: number, id?: string): RoomTheme;
   iconSprite(name: IconName): Sprite;
   /**
    * (Opcional, aditivo) Lance do futebol de drawScreen('show') com seed % 3 === 0, no instante `t`:

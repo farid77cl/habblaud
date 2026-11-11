@@ -2,7 +2,8 @@ import type { CharacterFrameRequest, FurnitureKind, Sprite, WallStyle } from '..
 import { mix } from '../../art/core/color';
 import { hash32 } from '../../../../shared/hash';
 import { renderSeasonalProp, type SeasonalProp } from '../../art/seasonal';
-import type { SeasonalTheme } from '../api';
+import { isVoute } from '../../art/voute';
+import { seasonalThemeFor, type SeasonalTheme } from '../api';
 import type { AreaLayout, WallSegment } from '../layout/types';
 
 const sprites = new Map<SeasonalProp, Sprite>();
@@ -19,7 +20,13 @@ function prop(kind: SeasonalProp): Sprite {
   return sprite;
 }
 
+export function getSeason(now: Date = new Date()): SeasonalTheme {
+  if (isVoute()) return 'none';
+  return seasonalThemeFor('auto', now);
+}
+
 export function seasonalCostume(theme: SeasonalTheme, seed: number): CharacterFrameRequest['costume'] {
+  if (isVoute()) return undefined;
   if (theme === 'christmas') return 'santa';
   if (theme === 'halloween') return (['witch', 'pumpkin', 'vampire'] as const)[(seed >>> 0) % 3];
   return undefined;
@@ -27,7 +34,7 @@ export function seasonalCostume(theme: SeasonalTheme, seed: number): CharacterFr
 
 /** Reutiliza footprints de plantas: nenhuma nova colisão ou mudança de caminhos. */
 export function seasonalFurniture(theme: SeasonalTheme, kind: FurnitureKind, area: AreaLayout, seed: number): Sprite | null {
-  if (theme === 'none' || area.kind === 'restroom') return null;
+  if (isVoute() || theme === 'none' || area.kind === 'restroom') return null;
   if (kind === 'plant_tall') {
     const first = area.furniture.find((f) => f.kind === 'plant_tall');
     if (!first || hash32(first.id) !== seed) return null;
@@ -38,11 +45,12 @@ export function seasonalFurniture(theme: SeasonalTheme, kind: FurnitureKind, are
 }
 
 export function seasonalRugColor(theme: SeasonalTheme, original: string): string {
+  if (isVoute()) return original;
   return theme === 'christmas' ? '#a93649' : theme === 'halloween' ? '#60416f' : original;
 }
 
 export function seasonalWallStyle(theme: SeasonalTheme, original: WallStyle): WallStyle {
-  if (theme === 'none' || original.pattern === 'glass') return original;
+  if (isVoute() || theme === 'none' || original.pattern === 'glass') return original;
   return { ...original, base: mix(original.base, theme === 'christmas' ? '#ffe3b4' : '#bc97d1', 0.18), trim: theme === 'christmas' ? '#4e7756' : '#725486' };
 }
 

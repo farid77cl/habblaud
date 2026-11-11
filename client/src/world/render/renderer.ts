@@ -2,6 +2,7 @@
 // ordenadas por profundidade -> luz/escuridão -> ícones. A passada em espaço de tela (texto
 // nítido) fica em overlay.ts.
 import { TILE, type ArtModule, type CharacterFrameRequest, type IconName, type ScreenMode, type Sprite } from '../../art/api';
+import { VP, isVoute } from '../../art/voute';
 import type { SeasonalTheme, WorldOptions } from '../api';
 import type { WorldAssets } from '../assets';
 import type { Camera } from '../camera';
@@ -187,8 +188,9 @@ export class Renderer {
     ctx.translate(-this.baseX, -this.baseY);
     paintShell(this.art, ctx, this.exterior.floors, []);
     // faixas da rua
+    const voute = isVoute();
     const ly = this.exterior.streetY + Math.round(this.exterior.streetH / 2) - 1;
-    ctx.fillStyle = 'rgba(255,236,170,0.75)';
+    ctx.fillStyle = voute ? 'rgba(212,166,74,0.75)' : 'rgba(255,236,170,0.75)';
     for (let x = this.baseX + 4; x < this.baseX + c.width; x += 24) ctx.fillRect(x, ly, 12, 2);
     this.shells = [];
     this.shellWindows = [];
@@ -236,15 +238,17 @@ export class Renderer {
       tctx.fillStyle = avg;
       tctx.fillRect(0, 0, 2 * s, 2 * s);
       tctx.globalAlpha = 1;
-      tctx.fillStyle = VIGNETTE_EDGE;
+      tctx.fillStyle = voute ? 'rgba(12,6,16,0.26)' : VIGNETTE_EDGE;
       tctx.fillRect(0, 0, 2 * s, 2 * s);
       this.grass = this.ctx.createPattern(tile, 'repeat');
       // cor de fundo (antes do padrão carregar): a média já com o tom da vinheta
       const k = VIGNETTE_ALPHA;
-      this.clearColor = `rgb(${Math.round((r / n) * (1 - k) + 18 * k)},${Math.round((g / n) * (1 - k) + 40 * k)},${Math.round((bl / n) * (1 - k) + 26 * k)})`;
+      this.clearColor = voute
+        ? VP.as1
+        : `rgb(${Math.round((r / n) * (1 - k) + 18 * k)},${Math.round((g / n) * (1 - k) + 40 * k)},${Math.round((bl / n) * (1 - k) + 26 * k)})`;
     } catch {
       this.grass = null;
-      this.clearColor = '#6f9a5a';
+      this.clearColor = voute ? VP.as1 : '#6f9a5a';
     }
     this.finishBase(ctx, cols);
     this.base = c;
@@ -306,12 +310,13 @@ export class Renderer {
       // sem vinheta
     }
     // capacho diante da fachada de vidro da entrada (oeste do corredor)
+    const voute = isVoute();
     const my = (CORRIDOR_Y + 1.25) * TILE;
-    ctx.fillStyle = '#3f4652';
+    ctx.fillStyle = voute ? VP.or : '#3f4652';
     ctx.fillRect(-1.75 * TILE, my, 1.5 * TILE, 2.5 * TILE);
-    ctx.fillStyle = '#596170';
+    ctx.fillStyle = voute ? VP.b5 : '#596170';
     ctx.fillRect(-1.75 * TILE + 2, my + 2, 1.5 * TILE - 4, 2.5 * TILE - 4);
-    ctx.fillStyle = '#4b525f';
+    ctx.fillStyle = voute ? '#6b1630' : '#4b525f';
     for (let y = my + 4; y < my + 2.5 * TILE - 4; y += 3) ctx.fillRect(-1.75 * TILE + 3, y, 1.5 * TILE - 6, 1);
     ctx.restore();
   }

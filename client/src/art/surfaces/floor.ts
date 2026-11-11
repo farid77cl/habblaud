@@ -4,6 +4,7 @@
 import { TILE, type FloorKind } from '../api';
 import { mix, parseColor, ramp, shade, type RGBA } from '../core/color';
 import { PixelBuf } from '../core/pixbuf';
+import { VP, isVoute } from '../voute';
 
 export const CHUNK_TILES = 8;
 export const CHUNK_PX = CHUNK_TILES * TILE;
@@ -46,28 +47,30 @@ export interface FloorOpts {
 
 /** Gera o bloco (cx, cy) — em unidades de chunk — de um tipo de piso. */
 export function floorChunk(kind: FloorKind, cx: number, cy: number, o: FloorOpts): PixelBuf {
+  const voute = isVoute();
+  const effKind: FloorKind = voute && kind === 'grass' ? 'asphalt' : kind;
   const b = new PixelBuf(CHUNK_PX, CHUNK_PX);
   const x0 = cx * CHUNK_PX;
   const y0 = cy * CHUNK_PX;
-  switch (kind) {
+  switch (effKind) {
     case 'wood':
-      paintWood(b, x0, y0, o.seed);
+      paintWood(b, x0, y0, o.seed, voute);
       break;
     case 'concrete':
-      paintConcrete(b, x0, y0, o.seed);
+      paintConcrete(b, x0, y0, o.seed, voute);
       break;
     case 'marble':
-      paintMarble(b, x0, y0, o.seed);
+      paintMarble(b, x0, y0, o.seed, voute);
       break;
     case 'sidewalk':
-      paintSidewalk(b, x0, y0, o.seed);
+      paintSidewalk(b, x0, y0, o.seed, voute);
       break;
     default:
       for (let ty = 0; ty < CHUNK_TILES; ty++) {
         for (let tx = 0; tx < CHUNK_TILES; tx++) {
           b.ox = tx * TILE;
           b.oy = ty * TILE;
-          paintTile(b, kind, cx * CHUNK_TILES + tx, cy * CHUNK_TILES + ty, o);
+          paintTile(b, effKind, cx * CHUNK_TILES + tx, cy * CHUNK_TILES + ty, o, voute);
         }
       }
       b.ox = 0;
@@ -78,13 +81,13 @@ export function floorChunk(kind: FloorKind, cx: number, cy: number, o: FloorOpts
 
 // ------------------------------------------------------------------ pisos por tile
 
-function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: FloorOpts): void {
+function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: FloorOpts, voute: boolean): void {
   const r = (i: number) => rnd01(tx, ty, i, o.seed);
   switch (kind) {
     case 'carpet': {
       // Placas de carpete modular: trama discreta que alterna de direção (xadrez de orientação).
-      const c1 = o.tint ?? '#c9d1dc';
-      const c2 = o.tint2 ?? shade(c1, -0.03);
+      const c1 = o.tint ?? (voute ? '#2a0a12' : '#c9d1dc');
+      const c2 = o.tint2 ?? shade(c1, voute ? 0.04 : -0.03);
       const odd = (tx + ty) & 1;
       const base = mix(c1, c2, odd ? 0.55 : 0.15);
       b.rect(0, 0, TILE, TILE, base);
@@ -104,8 +107,8 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
       break;
     }
     case 'tile_check': {
-      const a = '#f2ede4';
-      const c = '#d2d8de';
+      const a = voute ? '#2a0a12' : '#f2ede4';
+      const c = voute ? '#16090e' : '#d2d8de';
       for (let qy = 0; qy < 2; qy++) {
         for (let qx = 0; qx < 2; qx++) {
           const col = (qx + qy + tx + ty) % 2 ? c : a;
@@ -119,15 +122,26 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
       break;
     }
     case 'tile_white': {
-      const col = '#eef2f5';
-      const grout = '#d3dae1';
+      const col = voute ? '#240d17' : '#eef2f5';
+      const grout = voute ? '#16080e' : '#d3dae1';
+      const hi = voute ? '#3a1424' : '#fbfcfd';
+      const speck = voute ? '#1c0a12' : '#e4eaef';
       b.rect(0, 0, TILE, TILE, col);
       for (let q = 0; q < 2; q++) {
         b.hline(0, TILE - 1, q * 8 + 7, grout);
         b.vline(q * 8 + 7, 0, TILE - 1, grout);
       }
-      for (let qy = 0; qy < 2; qy++) for (let qx = 0; qx < 2; qx++) b.hline(qx * 8, qx * 8 + 2, qy * 8, '#fbfcfd');
-      if (r(1) < 0.4) b.set(Math.floor(r(2) * 14), Math.floor(r(3) * 14), '#e4eaef');
+      for (let qy = 0; qy < 2; qy++) for (let qx = 0; qx < 2; qx++) b.hline(qx * 8, qx * 8 + 2, qy * 8, hi);
+      if (r(1) < 0.4) b.set(Math.floor(r(2) * 14), Math.floor(r(3) * 14), speck);
+      break;
+    }
+    case 'asphalt': {
+      b.rect(0, 0, TILE, TILE, VP.as1);
+      for (let i = 0; i < 18; i++) {
+        const x = Math.floor(r(i) * TILE);
+        const y = Math.floor(r(i + 30) * TILE);
+        b.set(x, y, VP.as2);
+      }
       break;
     }
     case 'grass': {
@@ -162,6 +176,13 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
       break;
     }
     case 'street': {
+      if (voute) {
+        b.rect(0, 0, TILE, TILE, VP.as1);
+        for (let i = 0; i < 16; i++) {
+          b.set(Math.floor(r(i) * TILE), Math.floor(r(i + 30) * TILE), VP.as2);
+        }
+        break;
+      }
       const n = noise(tx * TILE, ty * TILE, 64, o.seed + 9);
       const col = mix('#4b4f58', '#565a63', n);
       b.rect(0, 0, TILE, TILE, col);
@@ -181,13 +202,18 @@ function rgba(c: string): RGBA {
 }
 
 const WOOD_TONES = ['#c99668', '#c48f61', '#cf9f72', '#c6925f'] as const;
-/** [tom][0 normal, 1 topo, 2 base, 3 veio, 4 emenda, 5 após emenda, 6 nó]. */
 const WOOD: readonly (readonly RGBA[])[] = WOOD_TONES.map((t) =>
   [t, shade(t, 0.03), shade(t, -0.075), shade(t, -0.03), shade(t, -0.1), shade(t, 0.03), shade(t, -0.12)].map(rgba),
 );
 
+const VOUTE_WOOD_TONES = ['#281818', '#2e1c1c', '#241414', '#321e1e'] as const;
+const VOUTE_WOOD: readonly (readonly RGBA[])[] = VOUTE_WOOD_TONES.map((t) =>
+  [t, shade(t, 0.03), shade(t, -0.05), shade(t, -0.025), shade(t, -0.07), shade(t, 0.03), shade(t, -0.08)].map(rgba),
+);
+
 /** Tábuas de madeira: 4px de altura, 48px de comprimento, emendas desencontradas, veios e nós. */
-function paintWood(b: PixelBuf, x0: number, y0: number, seed: number): void {
+function paintWood(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {
+  const palette = voute ? VOUTE_WOOD : WOOD;
   for (let py = 0; py < CHUNK_PX; py++) {
     const wy = y0 + py;
     const row = Math.floor(wy / 4);
@@ -198,7 +224,7 @@ function paintWood(b: PixelBuf, x0: number, y0: number, seed: number): void {
       const plank = Math.floor(wx / 48);
       const ix = wx - plank * 48;
       const ph = h3(row, plank, 2, seed);
-      const t = WOOD[ph % WOOD.length];
+      const t = palette[ph % palette.length];
       let k = 0;
       if (ix === 0) k = 4;
       else if (iy === 3) k = 2;
@@ -217,8 +243,17 @@ const CONCRETE_EDGE: readonly RGBA[] = CONCRETE.map((c) => rgba(shade(`rgb(${c[0
 const CONCRETE_SEAM = rgba('#c8cdd2');
 const CONCRETE_SPECK = [rgba('#cdd1d5'), rgba('#eceeef')] as const;
 
-/** Cimento polido claro em placas de 2x2 tiles, com manchas suaves contínuas. */
-function paintConcrete(b: PixelBuf, x0: number, y0: number, seed: number): void {
+const VOUTE_CONCRETE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mix('#12090e', '#1c0f17', i / (LEVELS - 1))));
+const VOUTE_CONCRETE_EDGE: readonly RGBA[] = VOUTE_CONCRETE.map((c) => rgba(shade(`rgb(${c[0]},${c[1]},${c[2]})`, 0.02)));
+const VOUTE_CONCRETE_SEAM = rgba('#0d060a');
+const VOUTE_CONCRETE_SPECK = [rgba('#2a0a12'), rgba('#3a0f1e')] as const;
+
+/** Cimento polido em placas de 2x2 tiles, com manchas suaves contínuas. */
+function paintConcrete(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {
+  const levels = voute ? VOUTE_CONCRETE : CONCRETE;
+  const edges = voute ? VOUTE_CONCRETE_EDGE : CONCRETE_EDGE;
+  const seam = voute ? VOUTE_CONCRETE_SEAM : CONCRETE_SEAM;
+  const speck = voute ? VOUTE_CONCRETE_SPECK : CONCRETE_SPECK;
   for (let py = 0; py < CHUNK_PX; py++) {
     for (let px = 0; px < CHUNK_PX; px++) {
       const wx = x0 + px;
@@ -226,17 +261,17 @@ function paintConcrete(b: PixelBuf, x0: number, y0: number, seed: number): void 
       const sx = wx & 31;
       const sy = wy & 31;
       if (sx === 31 || sy === 31) {
-        b.put(px, py, CONCRETE_SEAM);
+        b.put(px, py, seam);
         continue;
       }
       const sp = h3(wx, wy, 3, seed) % 61;
       if (sp < 2) {
-        b.put(px, py, CONCRETE_SPECK[sp]);
+        b.put(px, py, speck[sp]);
         continue;
       }
       const n = noise(wx, wy, 26, seed) * 0.6 + noise(wx, wy, 7, seed + 3) * 0.4;
       const lv = Math.min(LEVELS - 1, Math.floor(n * LEVELS));
-      b.put(px, py, sx === 0 || sy === 0 ? CONCRETE_EDGE[lv] : CONCRETE[lv]);
+      b.put(px, py, sx === 0 || sy === 0 ? edges[lv] : levels[lv]);
     }
   }
 }
@@ -245,34 +280,43 @@ const MARBLE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mi
 const MARBLE_VEIN = [rgba('#e2e3e6'), rgba('#cfd2d7')] as const;
 const MARBLE_SEAM = rgba('#d6d3ce');
 
-/** Mármore branco em placas de 2x2 tiles com veios cinza contínuos dentro da placa. */
-function paintMarble(b: PixelBuf, x0: number, y0: number, seed: number): void {
+const VOUTE_MARBLE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mix('#1b0b12', '#26101a', i / (LEVELS - 1))));
+const VOUTE_MARBLE_VEIN = [rgba('#4a1423'), rgba('#d4a64a')] as const;
+const VOUTE_MARBLE_SEAM = rgba('#12090e');
+
+/** Mármore em placas de 2x2 tiles com veios contínuos dentro da placa. */
+function paintMarble(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {
+  const levels = voute ? VOUTE_MARBLE : MARBLE;
+  const vein = voute ? VOUTE_MARBLE_VEIN : MARBLE_VEIN;
+  const seam = voute ? VOUTE_MARBLE_SEAM : MARBLE_SEAM;
   for (let py = 0; py < CHUNK_PX; py++) {
     for (let px = 0; px < CHUNK_PX; px++) {
       const wx = x0 + px;
       const wy = y0 + py;
       if ((wx & 31) === 31 || (wy & 31) === 31) {
-        b.put(px, py, MARBLE_SEAM);
+        b.put(px, py, seam);
         continue;
       }
       const slab = h3(wx >> 5, wy >> 5, 4, seed);
       const ax = (slab % 1000) / 1000;
-      // Só parte das placas tem veios (uma ou duas linhas suaves e contínuas).
       const veined = (slab >>> 12) % 5 < 2;
       const v = veined ? Math.sin(wx * 0.08 + wy * (0.14 + ax * 0.1) + noise(wx, wy, 14, seed + 12) * 2.4 + ax * 6.28) : 0;
-      if (v > 0.997) b.put(px, py, MARBLE_VEIN[1]);
-      else if (v > 0.986) b.put(px, py, MARBLE_VEIN[0]);
-      else b.put(px, py, MARBLE[Math.min(LEVELS - 1, Math.floor(noise(wx, wy, 20, seed + 11) * LEVELS))]);
+      if (v > 0.997) b.put(px, py, vein[1]);
+      else if (v > 0.986) b.put(px, py, vein[0]);
+      else b.put(px, py, levels[Math.min(LEVELS - 1, Math.floor(noise(wx, wy, 20, seed + 11) * LEVELS))]);
     }
   }
 }
 
 const WALK_TONES = ['#d3cdc2', '#cfc8bc', '#d8d2c8'] as const;
-/** [tom][0 normal, 1 junta, 2 borda clara, 3 mancha]. */
 const WALK: readonly (readonly RGBA[])[] = WALK_TONES.map((t) => [t, '#b8b1a5', shade(t, 0.03), shade(t, -0.05)].map(rgba));
 
+const VOUTE_WALK_TONES = ['#302e3a', '#2b2935', '#343240'] as const;
+const VOUTE_WALK: readonly (readonly RGBA[])[] = VOUTE_WALK_TONES.map((t) => [t, '#1b1a20', shade(t, 0.03), shade(t, -0.04)].map(rgba));
+
 /** Calçada de placas 16x8 em fileiras desencontradas. */
-function paintSidewalk(b: PixelBuf, x0: number, y0: number, seed: number): void {
+function paintSidewalk(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {
+  const walk = voute ? VOUTE_WALK : WALK;
   for (let py = 0; py < CHUNK_PX; py++) {
     for (let px = 0; px < CHUNK_PX; px++) {
       const wx = x0 + px;
@@ -281,7 +325,7 @@ function paintSidewalk(b: PixelBuf, x0: number, y0: number, seed: number): void 
       const off = row & 1 ? 8 : 0;
       const ix = (wx + off) & 15;
       const iy = wy & 7;
-      const t = WALK[h3((wx + off) >> 4, row, 5, seed) % WALK.length];
+      const t = walk[h3((wx + off) >> 4, row, 5, seed) % walk.length];
       let k = 0;
       if (iy === 7 || ix === 15) k = 1;
       else if (iy === 0 || ix === 0) k = 2;

@@ -2,6 +2,8 @@
 // vez e guardada em cache por quem chama (ver art/index.ts).
 import { FURNITURE, type FurnitureKind } from '../api';
 import { trim, type BufFurniture } from '../core/sprite';
+import { isVoute } from '../voute';
+import { VOUTE_SWAP } from './cabaret';
 import * as C from './common';
 import * as O from './office';
 import * as W from './wall';
@@ -32,6 +34,10 @@ export function normalizeFurniture(kind: FurnitureKind, variant?: string, state?
 }
 
 function build(kind: FurnitureKind, variant: string | undefined, state: number, seed: number): BufFurniture {
+  if (isVoute()) {
+    const swap = VOUTE_SWAP[kind];
+    if (swap) return swap(variant, state, seed);
+  }
   switch (kind) {
     case 'desk':
       return O.desk(variant, seed);

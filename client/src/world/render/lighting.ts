@@ -6,6 +6,7 @@
 // a chave de luz muda (hora em passos de poucos segundos, luz das salas, ocupação das áreas comuns,
 // montagem de salas); por frame, um drawImage em 'multiply' e alguns sprites de brilho em cache.
 import { TILE, type ArtModule, type ScreenMode } from '../../art/api';
+import { isVoute } from '../../art/voute';
 import { mulberry32 } from '../../../../shared/hash';
 import { BUILDING_H, COL_W, CORRIDOR_H, CORRIDOR_Y } from '../constants';
 import type { ExteriorLayout, SlotShell } from '../layout/exterior';
@@ -28,7 +29,39 @@ const LAMP_WARM: Rgb = [255, 236, 196];
 const STREET_WARM: Rgb = [255, 214, 150];
 const SCREEN_COOL: Rgb = [196, 222, 255];
 const ARCADE_GLOW: Rgb = [236, 190, 255];
+const VOUTE_WARM: Rgb = [255, 224, 138];
+const VOUTE_NEON: Rgb = [255, 63, 164];
+const VOUTE_GOLD: Rgb = [212, 166, 74];
 const FIREFLIES = 26;
+
+/** Ambiente noturno permanente do cabaré La Voûte. */
+export const VOUTE_AMBIENT: Ambient = {
+  hour: 23,
+  phase: 'noite',
+  night: 1,
+  warm: 0,
+  outside: [58, 26, 58],
+  inside: [255, 224, 138],
+  dim: [140, 34, 64],
+};
+
+/** Flicker sutil de 120ms a cada 6000ms para o letreiro de néon de La Voûte. */
+export function cabaretNeonAlpha(now: number, reducedMotion = prefersReducedMotion()): number {
+  if (reducedMotion) return 1;
+  const phase = ((now % 6_000) + 6_000) % 6_000;
+  if (phase < 120) return 0.55;
+  return 1;
+}
+
+/** Alterna o LED das cabines entre #ff3fa4 e #ffe08a a cada 500ms (estático em reducedMotion). */
+export function cabaretBoothLedColor(
+  now: number,
+  index = 0,
+  reducedMotion = prefersReducedMotion(),
+): '#ff3fa4' | '#ffe08a' {
+  const step = reducedMotion ? index : Math.floor(now / 500) + index;
+  return (step & 1) === 0 ? '#ff3fa4' : '#ffe08a';
+}
 
 /** O que a iluminação precisa do renderer (satisfeito pelo próprio Renderer). */
 export interface LightScene {
@@ -169,14 +202,23 @@ export class Lighting {
    * ou a hora forçada) e devolve a hora efetiva, para o céu das janelas.
    */
   update(now: number, mode: DaylightMode, override: number | null, date: Date): number {
-    const hour = effectiveHour(mode, override, date);
-    const changed = mode !== this.mode || override !== this.override;
     if (now - this.reducedAt > 5_000) {
       this.reducedAt = now;
       this.reduced = prefersReducedMotion();
     }
+    if (isVoute()) {
+      this.mode = mode;
+      this.override = override;
+      this.calcAt = now;
+      this.lastNow = now;
+      this.target = VOUTE_AMBIENT;
+      this.ambient = VOUTE_AMBIENT;
+      return 23;
+    }
+    const hour = effectiveHour(mode, override, date);
+    const changed = mode !== this.mode || override !== this.override || this.target === VOUTE_AMBIENT;
     if (changed || now - this.calcAt >= RECALC_MS) {
-      const first = this.mode === null;
+      const first = this.mode === null || this.target === VOUTE_AMBIENT;
       this.mode = mode;
       this.override = override;
       this.calcAt = now;
@@ -320,7 +362,7 @@ export class Lighting {
   /** Tudo o que muda o mapa, em passos discretos (evita refazê-lo a cada frame). */
   private lightKey(scene: LightScene, now: number): string {
     const a = this.ambient;
-    let k = `${Math.round(a.night * 200)}|${a.outside.join(',')}|${a.inside.join(',')}|${a.dim.join(',')}|${this.sim.building.cols}`;
+    let k = `${isVoute() ? 'V|' : ''}${Math.round(a.night * 200)}|${a.outside.join(',')}|${a.inside.join(',')}|${a.dim.join(',')}|${this.sim.building.cols}`;
     for (const vis of scene.areas.values()) {
       const { lit, cover } = this.areaLight(vis, now);
       k += `|${vis.id}:${Math.round(lit * 24)}:${Math.round(cover * 20)}`;
@@ -383,10 +425,11 @@ export class Lighting {
     }
     // halos: luminárias acesas, máquinas, postes, a luz das janelas no gramado
     m.globalCompositeOperation = 'lighten';
-    const lamp = haloSprite(LAMP_WARM, 64);
-    const street = haloSprite(STREET_WARM, 64);
-    const cool = haloSprite(SCREEN_COOL, 48);
-    const arcade = haloSprite(ARCADE_GLOW, 48);
+    const voute = isVoute();
+    const lamp = haloSprite(voute ? VOUTE_WARM : LAMP_WARM, 64);
+    const street = haloSprite(voute ? VOUTE_WARM : STREET_WARM, 64);
+    const cool = haloSprite(voute ? VOUTE_GOLD : SCREEN_COOL, 48);
+    const arcade = haloSprite(voute ? VOUTE_NEON : ARCADE_GLOW, 48);
     const k = Math.min(1, (n - 0.12) / 0.5);
     const halo = (img: HTMLCanvasElement, cx: number, cy: number, w: number, h: number, a: number) => {
       if (a <= 0.01) return;
@@ -403,6 +446,8 @@ export class Lighting {
         if (f.kind === 'floor_lamp') halo(lamp, f.ax, f.ay - 6, 92, 66, a);
         else if (f.kind === 'vending_machine') halo(cool, f.ax, f.ay + 4, 52, 34, 0.9 * a);
         else if (f.kind === 'arcade') halo(arcade, f.ax, f.ay + 4, 44, 30, 0.8 * a);
+        else if (voute && (f.kind === 'desk' || f.kind === 'desk_back')) halo(lamp, f.ax, f.ay - 8, 60, 44, 0.85 * a);
+        else if (voute && (f.kind === 'meeting_table' || f.kind === 'cafe_table')) halo(lamp, f.ax, f.ay - 4, 56, 40, 0.7 * a);
       }
     }
     for (const prop of scene.exterior.props) {
@@ -410,6 +455,8 @@ export class Lighting {
         halo(street, prop.x, prop.y + 6, 120, 84, k);
         halo(street, prop.x, prop.y - 30, 30, 24, 0.7 * k);
       } else if (prop.kind === 'totem') halo(cool, prop.x, prop.y - 4, 34, 22, 0.6 * k);
+      else if (prop.kind === 'neon_sign') halo(arcade, prop.x, prop.y - 12, 144, 92, k);
+      else if (prop.kind === 'velvet_rope') halo(cool, prop.x, prop.y, 44, 28, 0.55 * k);
     }
     this.paintWindowSpill(scene, lit, k, halo, street);
     m.globalAlpha = 1;
@@ -455,10 +502,12 @@ export class Lighting {
   /** Brilhos aditivos: monitores, TV, máquinas, bulbos dos postes, faróis e vaga-lumes. */
   drawGlows(ctx: CanvasRenderingContext2D, scene: LightScene, view: View, now: number): void {
     const n = this.ambient.night;
+    const voute = isVoute();
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    const cool = glowSprite('#7fb8ff', 48);
-    const warm = glowSprite('#ffcf7a', 64);
+    const cool = glowSprite(voute ? '#ff3fa4' : '#7fb8ff', 48);
+    const warm = glowSprite(voute ? '#ffe08a' : '#ffcf7a', 64);
+    const gold = voute ? glowSprite('#d4a64a', 48) : cool;
     const inView = (x: number, y: number, m: number) => x > view.x0 - m && x < view.x1 + m && y > view.y0 - m && y < view.y1 + m;
     for (const vis of scene.areas.values()) {
       const p = vis.px;
@@ -467,42 +516,81 @@ export class Lighting {
       const dark = room ? 1 - room.light(now) : 0;
       const k = Math.max(n, dark);
       if (k < 0.2) continue;
+      let boothIdx = 0;
       for (const f of vis.furniture) {
         if (!inView(f.ax, f.ay, 40)) continue;
         if (f.kind === 'desk' || f.kind === 'desk_back') {
           const mode = scene.deskScreen(f, vis);
-          if (mode === 'off') continue;
-          // quem trabalha à noite fica com o rosto iluminado pela tela
-          ctx.globalAlpha = (mode === 'idle' ? 0.2 : 0.35) * k;
-          ctx.drawImage(cool, Math.round(f.ax - 24), Math.round(f.ay - 34));
+          if (!voute && mode === 'off') continue;
+          // no cabaré, o espelho de camarim brilha com lâmpadas #ffe08a
+          ctx.globalAlpha = (mode === 'off' ? 0.22 : mode === 'idle' ? 0.3 : 0.45) * k;
+          if (voute) ctx.drawImage(warm, Math.round(f.ax - 32), Math.round(f.ay - 42), 64, 64);
+          else ctx.drawImage(cool, Math.round(f.ax - 24), Math.round(f.ay - 34));
         } else if (f.kind === 'floor_lamp' && n > 0.2 && (!room || room.lightOn)) {
           // bulbo aceso (o halo no chão está no mapa de luz)
           const g = this.lampHead(f);
           ctx.globalAlpha = 0.5 * n;
           ctx.drawImage(warm, Math.round(g.x - 16), Math.round(g.y - 16), 32, 32);
         } else if (f.kind === 'vending_machine' || f.kind === 'arcade') {
-          ctx.globalAlpha = 0.25 * k;
+          ctx.globalAlpha = (voute ? 0.4 : 0.25) * k;
           ctx.drawImage(cool, Math.round(f.ax - 24), Math.round(f.ay - 36));
+        } else if (voute && (f.kind === 'meeting_table' || f.kind === 'cafe_table')) {
+          ctx.globalAlpha = 0.28 * k;
+          ctx.drawImage(warm, Math.round(f.ax - 20), Math.round(f.ay - 28), 40, 40);
+        } else if (voute && (f.kind === 'filing_cabinet' || f.kind === 'binder_shelf')) {
+          ctx.globalAlpha = 0.25 * k;
+          ctx.drawImage(gold, Math.round(f.ax - 20), Math.round(f.ay - 28), 40, 40);
+        } else if (voute && f.kind === 'sofa') {
+          const led = glowSprite(cabaretBoothLedColor(now, boothIdx++, this.reduced), 28);
+          ctx.globalAlpha = 0.45 * k;
+          ctx.drawImage(led, Math.round(f.ax - 14), Math.round(f.ay - 28), 28, 28);
         }
       }
-      // TV de parede ligada: luz azulada na frente da tela
+      // LEDs alternados nas cabines privadas (voute:cabina)
+      if (voute && (vis.id.includes('voute:cabina') || room?.theme.wall.base === '#2a0f1d')) {
+        for (let i = 0; i < 2; i++) {
+          const lx = p.x + (i === 0 ? 18 : p.w - 18);
+          const ly = p.y + 18;
+          if (!inView(lx, ly, 24)) continue;
+          const led = glowSprite(cabaretBoothLedColor(now, i, this.reduced), 24);
+          ctx.globalAlpha = 0.4 * k;
+          ctx.drawImage(led, Math.round(lx - 12), Math.round(ly - 12), 24, 24);
+        }
+      }
+      // TV e letreiros de parede ligados
       if (n > 0.2) {
         for (const w of vis.wallItems) {
-          if (w.kind !== 'tv' || !inView(w.cx, w.baseY, 60)) continue;
-          ctx.globalAlpha = 0.3 * n;
-          ctx.drawImage(cool, Math.round(w.cx - 28), Math.round(w.baseY - 30), 56, 56);
+          if (!inView(w.cx, w.baseY, 60)) continue;
+          if (w.kind === 'tv') {
+            ctx.globalAlpha = (voute ? 0.38 : 0.3) * n;
+            ctx.drawImage(cool, Math.round(w.cx - 28), Math.round(w.baseY - 30), 56, 56);
+          } else if (voute && w.kind === 'sign') {
+            ctx.globalAlpha = 0.42 * n * cabaretNeonAlpha(now, this.reduced);
+            ctx.drawImage(cool, Math.round(w.cx - 24), Math.round(w.baseY - 26), 48, 48);
+          } else if (voute && w.kind === 'painting') {
+            ctx.globalAlpha = 0.22 * n;
+            ctx.drawImage(gold, Math.round(w.cx - 20), Math.round(w.baseY - 24), 40, 40);
+          }
         }
       }
     }
-    this.drawSunbeams(ctx, scene, view);
+    if (!voute) this.drawSunbeams(ctx, scene, view);
     if (n > 0.2) {
       for (const prop of scene.exterior.props) {
-        if (prop.kind !== 'lamp' || !inView(prop.x, prop.y, 64)) continue;
-        ctx.globalAlpha = 0.6 * n;
-        ctx.drawImage(warm, Math.round(prop.x - 14), Math.round(prop.y - 43), 28, 28);
+        if (!inView(prop.x, prop.y, 72)) continue;
+        if (prop.kind === 'lamp') {
+          ctx.globalAlpha = 0.6 * n;
+          ctx.drawImage(warm, Math.round(prop.x - 14), Math.round(prop.y - 43), 28, 28);
+        } else if (prop.kind === 'neon_sign') {
+          ctx.globalAlpha = 0.75 * n * cabaretNeonAlpha(now, this.reduced);
+          ctx.drawImage(cool, Math.round(prop.x - 36), Math.round(prop.y - 44), 72, 56);
+        } else if (prop.kind === 'velvet_rope') {
+          ctx.globalAlpha = 0.32 * n;
+          ctx.drawImage(gold, Math.round(prop.x - 14), Math.round(prop.y - 18), 28, 28);
+        }
       }
       this.drawHeadlights(ctx, scene, view, n);
-      if (n > 0.6 && !this.reduced) this.drawFireflies(ctx, scene, view, now, (n - 0.6) / 0.4);
+      if (!voute && n > 0.6 && !this.reduced) this.drawFireflies(ctx, scene, view, now, (n - 0.6) / 0.4);
     }
     ctx.restore();
   }

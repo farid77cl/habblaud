@@ -7,13 +7,16 @@ import { createUI } from './ui';
 import type { CitySceneHost } from './ui/world/scene-switch';
 import type { CityScene } from './world/city';
 import { migrateLegacyKeys, safeLocalStorage } from './ui/prefs';
-import { aplicarVoute } from './net/voute-estado';
+import { setVouteMode } from './art/voute';
+import { aplicarVoute, leerVoute } from './net/voute-estado';
 import { montarBotonVoute } from './ui/voute';
 import { getLocale, tr } from '../../shared/i18n';
 
 export function start(): void {
   // Antes de tudo: o mundo (carteiras) e a UI (preferências) leem o localStorage ao serem criados.
-  migrateLegacyKeys(safeLocalStorage());
+  const storage = safeLocalStorage();
+  migrateLegacyKeys(storage);
+  setVouteMode(leerVoute(storage));
 
   // Idioma escolhido (shared/i18n): leitores de tela e o corretor do navegador seguem o atributo lang.
   document.documentElement.lang = getLocale();
@@ -29,7 +32,18 @@ export function start(): void {
   const world = createWorld(worldCanvas, store);
   const city = cityHost({ world, worldCanvas, uiRoot, mock: store.mock, params, version: () => store.liveSnapshot?.meta.version ?? '' });
   createUI(uiRoot, store, world, city);
-  montarBotonVoute(uiRoot, safeLocalStorage(), (on) => store.setView(on ? (s) => aplicarVoute(s, true) : null));
+  let mounted = false;
+  montarBotonVoute(
+    uiRoot,
+    storage,
+    (on) => {
+      setVouteMode(on);
+      store.setView(on ? (s) => aplicarVoute(s, true) : null);
+      if (mounted) world.rebuild?.();
+    },
+    { canvas: worldCanvas },
+  );
+  mounted = true;
   // O que esta página pode fazer (porta local ou remota com login) chega antes do primeiro snapshot (ou desiste em
   // poucos segundos e fica a regra de antes).
   if (store.mock) store.connect();

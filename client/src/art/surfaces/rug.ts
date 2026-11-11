@@ -1,9 +1,41 @@
 // Tapetes decorativos (puros): borda escura, filete claro, franjas nas pontas e padrão no campo.
 import { ramp, shade } from '../core/color';
 import { PixelBuf } from '../core/pixbuf';
+import { VP, isVoute } from '../voute';
 
 export function renderRug(w: number, h: number, color: string, seed: number): PixelBuf {
   const b = new PixelBuf(w, h);
+  if (isVoute()) {
+    const x0 = 1;
+    const x1 = w - 2;
+    // Flecos dorados en los extremos cortos.
+    for (let y = 2; y < h - 2; y += 2) {
+      b.set(0, y, VP.or);
+      b.set(w - 1, y, VP.or);
+    }
+    // Borde exterior dorado 1px (#d4a64a).
+    b.rect(x0, 0, x1 - x0 + 1, h, VP.or);
+    // Línea interna #3a0f1e de 1px.
+    b.rect(x0 + 1, 1, x1 - x0 - 1, h - 2, '#3a0f1e');
+    // Campo de terciopelo carmesí (#8c2240) con rombos #ff3fa4 cada 4px.
+    const fx = x0 + 2;
+    const fy = 2;
+    const fw = Math.max(0, x1 - x0 - 3);
+    const fh = Math.max(0, h - 4);
+    for (let y = 0; y < fh; y++) {
+      for (let x = 0; x < fw; x++) {
+        let c: string = VP.b5;
+        const mx = x % 4;
+        const my = y % 4;
+        if (mx === 1 && my === 1) c = VP.rn;
+        else if ((mx === 1 && (my === 0 || my === 2)) || (my === 1 && (mx === 0 || mx === 2))) c = '#6b1630';
+        b.set(fx + x, fy + y, c);
+      }
+    }
+    for (const [cx, cy] of [[x0, 0], [x1, 0], [x0, h - 1], [x1, h - 1]] as const) b.clear(cx, cy);
+    return b;
+  }
+
   const m = ramp(color, 0.06);
   const fringe = '#efe6d2';
   // Franjas nas laterais curtas (1px para fora do corpo).

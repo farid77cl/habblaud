@@ -1,11 +1,13 @@
 // Área externa: grama, árvores, calçada e rua; pátio/jardim nos slots sem sala.
 import type { WallStyle } from '../../art/api';
+import { isVoute } from '../../art/voute';
 import { mulberry32 } from '../../../../shared/hash';
 import { BUILDING_H, COL_W, CORE_COLS, CORRIDOR_Y, EXT_EAST, EXT_NORTH, EXT_SOUTH, EXT_WEST, SOUTH_Y, TILE } from '../constants';
 import { cellRect, slotAt, slotColumn, slotSide } from './geometry';
 import type { ExteriorProp, FloorPatch, TileRect, WallItemPlacement, WallSegment } from './types';
 
 export const EXTERIOR_WALL: WallStyle = { base: '#cfc8bd', trim: '#8a8174', pattern: 'brick', exterior: true };
+export const VOUTE_EXTERIOR_WALL: WallStyle = { base: '#2a0a12', trim: '#d4a64a', pattern: 'brick', exterior: true };
 
 export interface ExteriorLayout {
   /** Limites da área desenhada (tiles). */
@@ -30,6 +32,7 @@ export interface SlotShell {
 }
 
 export function layoutExterior(cols: number): ExteriorLayout {
+  const voute = isVoute();
   const w = cols * COL_W;
   const bounds: TileRect = { x: -EXT_WEST, y: -EXT_NORTH, w: w + EXT_WEST + EXT_EAST, h: BUILDING_H + EXT_NORTH + EXT_SOUTH };
   const px = (t: number) => t * TILE;
@@ -37,7 +40,7 @@ export function layoutExterior(cols: number): ExteriorLayout {
   const props: ExteriorProp[] = [];
   const rng = mulberry32(0xc0de + cols);
 
-  floors.push({ kind: 'grass', x: px(bounds.x), y: px(bounds.y), w: px(bounds.w), h: px(bounds.h), seed: 11 });
+  floors.push({ kind: voute ? 'asphalt' : 'grass', x: px(bounds.x), y: px(bounds.y), w: px(bounds.w), h: px(bounds.h), seed: 11 });
   // calçada em volta do prédio
   const south = BUILDING_H;
   floors.push({ kind: 'sidewalk', x: px(bounds.x), y: px(south + 2), w: px(bounds.w), h: px(2), seed: 12 });
@@ -46,6 +49,40 @@ export function layoutExterior(cols: number): ExteriorLayout {
   // caminho de pedra até a calçada, na frente da recepção
   floors.push({ kind: 'sidewalk', x: px(-3), y: px(CORRIDOR_Y), w: px(3), h: px(5), seed: 15 });
   floors.push({ kind: 'sidewalk', x: px(-3), y: px(CORRIDOR_Y + 5), w: px(2), h: px(south + 2 - CORRIDOR_Y - 5), seed: 16 });
+
+  const streetY = px(south + 4);
+  const streetH = px(5);
+
+  if (voute) {
+    // Cartel de neón principal "LA VOÛTE" en la entrada y en la fachada sur
+    props.push({ kind: 'neon_sign', x: px(-2), y: px(CORRIDOR_Y + 1), seed: 1 });
+    props.push({ kind: 'neon_sign', x: px(COL_W), y: px(south + 1) + 6, seed: 2 });
+    // Cuerdas de terciopelo con postes dorados flanqueando la entrada
+    props.push({ kind: 'velvet_rope', x: px(-2) - 4, y: px(CORRIDOR_Y + 4) + 6, seed: 3 });
+    props.push({ kind: 'velvet_rope', x: px(-2) - 4, y: px(CORRIDOR_Y + 7) + 6, seed: 4 });
+    props.push({ kind: 'velvet_rope', x: px(COL_W) - 20, y: px(south + 2) + 8, seed: 5 });
+    props.push({ kind: 'velvet_rope', x: px(COL_W) + 20, y: px(south + 2) + 8, seed: 6 });
+    // Faroles nocturnos a lo largo de la vereda y acceso
+    for (let x = bounds.x + 4; x < bounds.x + bounds.w; x += 8) {
+      props.push({ kind: 'lamp', x: px(x), y: px(south + 3) + 6, seed: x });
+    }
+    props.push({ kind: 'lamp', x: px(-4), y: px(CORRIDOR_Y + 1), seed: 91 });
+    props.push({ kind: 'lamp', x: px(-4), y: px(CORRIDOR_Y + 6), seed: 92 });
+    // Limusina negra y taxi nocturno estacionados frente al cabaret
+    props.push({ kind: 'car_limo', x: px(2), y: streetY + Math.round(streetH * 0.36), seed: 50 });
+    props.push({ kind: 'car_taxi', x: px(12), y: streetY + Math.round(streetH * 0.86), seed: 51 });
+    return {
+      bounds,
+      floors,
+      props,
+      lanes: [
+        { y: streetY + Math.round(streetH * 0.36), dir: 1 },
+        { y: streetY + Math.round(streetH * 0.86), dir: -1 },
+      ],
+      streetY,
+      streetH,
+    };
+  }
 
   // árvores ao norte (fileira com variação) e a oeste/leste
   for (let x = bounds.x + 1; x < bounds.x + bounds.w - 1; x += 4 + Math.floor(rng() * 3)) {
@@ -93,8 +130,6 @@ export function layoutExterior(cols: number): ExteriorLayout {
   // totem com a marca na entrada principal (oeste)
   props.push({ kind: 'totem', x: px(-3) + 6, y: px(CORRIDOR_Y + 1), seed: 2 });
 
-  const streetY = px(south + 4);
-  const streetH = px(5);
   return {
     bounds,
     floors,
@@ -110,6 +145,8 @@ export function layoutExterior(cols: number): ExteriorLayout {
 
 /** Parede externa + jardim de um slot vazio: deck de madeira com mesas e guarda-sóis, canteiros e caminho. */
 export function slotShell(slot: number, lastColumn: boolean): SlotShell {
+  const voute = isVoute();
+  const extWall = voute ? VOUTE_EXTERIOR_WALL : EXTERIOR_WALL;
   const col = slotColumn(slot);
   const side = slotSide(slot);
   const rect = cellRect(col, side);
@@ -129,43 +166,51 @@ export function slotShell(slot: number, lastColumn: boolean): SlotShell {
   };
 
   if (side === 'north') {
-    // fachada com janelas fechando o corredor (linhas 10–11)
     const fy = (CORRIDOR_Y - 2) * TILE;
-    walls.push({ kind: 'face', x: x0, y: fy, w: W, style: EXTERIOR_WALL });
+    walls.push({ kind: 'face', x: x0, y: fy, w: W, style: extWall });
     [3, 8, 13].forEach((cx, i) =>
       windows.push({ id: `shell:${slot}:janela${i}`, kind: 'window', cx: x0 + cx * TILE, baseY: CORRIDOR_Y * TILE, on: 'face', order: 0 }),
     );
-    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: fy, w: TILE / 2, h: 2 * TILE, style: EXTERIOR_WALL });
-    // caminho do gramado até o deck, deck no meio e canteiros sob as janelas
+    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: fy, w: TILE / 2, h: 2 * TILE, style: extWall });
     floors.push({ kind: 'sidewalk', x: x0 + T(7), y: T(rect.y), w: T(2), h: T(3), seed: slot });
     deck(3, 3, 10, 5);
-    props.push({ kind: 'parasol', x: x0 + T(5.5), y: T(rect.y + 6) + 4, seed: seed(), slot });
-    props.push({ kind: 'parasol', x: x0 + T(10.5), y: T(rect.y + 6) + 4, seed: seed(), slot });
-    props.push({ kind: 'bush', x: x0 + T(3.5), y: T(rect.y + 3) + 6, seed: seed(), slot });
-    props.push({ kind: 'bush', x: x0 + T(12.5), y: T(rect.y + 3) + 6, seed: seed(), slot });
-    for (const cx of [3, 8, 13]) props.push({ kind: 'flowers', x: x0 + T(cx), y: T(rect.y + 9) + 12, seed: slot * 3 + cx, slot });
-    props.push({ kind: 'tree', x: x0 + T(1) + 4, y: T(rect.y + 3), seed: seed(), slot });
-    props.push({ kind: rng() < 0.5 ? 'pine' : 'tree', x: x0 + T(15) - 4, y: T(rect.y + 3) + 6, seed: seed(), slot });
-    props.push({ kind: 'bush', x: x0 + T(1) + 8, y: T(rect.y + 8), seed: seed(), slot });
-    props.push({ kind: 'bush', x: x0 + T(15) - 8, y: T(rect.y + 8), seed: seed(), slot });
+    if (voute) {
+      props.push({ kind: 'lamp', x: x0 + T(4), y: T(rect.y + 6), seed: seed(), slot });
+      props.push({ kind: 'lamp', x: x0 + T(12), y: T(rect.y + 6), seed: seed(), slot });
+      props.push({ kind: 'velvet_rope', x: x0 + T(8), y: T(rect.y + 8), seed: seed(), slot });
+    } else {
+      props.push({ kind: 'parasol', x: x0 + T(5.5), y: T(rect.y + 6) + 4, seed: seed(), slot });
+      props.push({ kind: 'parasol', x: x0 + T(10.5), y: T(rect.y + 6) + 4, seed: seed(), slot });
+      props.push({ kind: 'bush', x: x0 + T(3.5), y: T(rect.y + 3) + 6, seed: seed(), slot });
+      props.push({ kind: 'bush', x: x0 + T(12.5), y: T(rect.y + 3) + 6, seed: seed(), slot });
+      for (const cx of [3, 8, 13]) props.push({ kind: 'flowers', x: x0 + T(cx), y: T(rect.y + 9) + 12, seed: slot * 3 + cx, slot });
+      props.push({ kind: 'tree', x: x0 + T(1) + 4, y: T(rect.y + 3), seed: seed(), slot });
+      props.push({ kind: rng() < 0.5 ? 'pine' : 'tree', x: x0 + T(15) - 4, y: T(rect.y + 3) + 6, seed: seed(), slot });
+      props.push({ kind: 'bush', x: x0 + T(1) + 8, y: T(rect.y + 8), seed: seed(), slot });
+      props.push({ kind: 'bush', x: x0 + T(15) - 8, y: T(rect.y + 8), seed: seed(), slot });
+    }
   } else {
-    // mureta externa fechando o corredor (linha 17) e jardim abaixo, ligado à calçada da rua
-    walls.push({ kind: 'south', x: x0, y: SOUTH_Y * TILE, w: W, style: EXTERIOR_WALL });
-    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: SOUTH_Y * TILE, w: TILE / 2, h: TILE, style: EXTERIOR_WALL });
+    walls.push({ kind: 'south', x: x0, y: SOUTH_Y * TILE, w: W, style: extWall });
+    if (lastColumn) walls.push({ kind: 'cap', x: x0 + W - TILE / 2, y: SOUTH_Y * TILE, w: TILE / 2, h: TILE, style: extWall });
     floors.push({ kind: 'sidewalk', x: x0 + T(7), y: T(rect.y + 1), w: T(2), h: T(rect.h - 1), seed: slot });
-    // trecho entre a fachada e a calçada: só existe enquanto o slot está vazio (a cerca viva fecha)
     props.push({ kind: 'paving', x: x0 + T(7), y: T(BUILDING_H), seed: slot, slot });
     deck(3, 3.5, 10, 5);
-    props.push({ kind: 'parasol', x: x0 + T(5.5), y: T(rect.y + 6.5) + 4, seed: seed(), slot });
-    props.push({ kind: 'parasol', x: x0 + T(10.5), y: T(rect.y + 6.5) + 4, seed: seed(), slot });
-    props.push({ kind: 'bush', x: x0 + T(3.5), y: T(rect.y + 4) + 4, seed: seed(), slot });
-    props.push({ kind: 'bush', x: x0 + T(12.5), y: T(rect.y + 4) + 4, seed: seed(), slot });
-    for (const cx of [3, 13]) props.push({ kind: 'flowers', x: x0 + T(cx), y: T(rect.y + 2), seed: slot * 3 + cx, slot });
-    props.push({ kind: 'bench', x: x0 + T(4), y: T(rect.y + 10) + 6, seed: slot, slot });
-    props.push({ kind: 'bench', x: x0 + T(12), y: T(rect.y + 10) + 6, seed: slot + 1, slot });
-    props.push({ kind: 'tree', x: x0 + T(1) + 6, y: T(rect.y + 11), seed: seed(), slot });
-    props.push({ kind: rng() < 0.5 ? 'pine' : 'tree', x: x0 + T(15) - 6, y: T(rect.y + 11) + 4, seed: seed(), slot });
-    props.push({ kind: 'rock', x: x0 + T(14), y: T(rect.y + 2) + 4, seed: slot + 3, slot });
+    if (voute) {
+      props.push({ kind: 'lamp', x: x0 + T(4), y: T(rect.y + 7), seed: seed(), slot });
+      props.push({ kind: 'lamp', x: x0 + T(12), y: T(rect.y + 7), seed: seed(), slot });
+      props.push({ kind: 'velvet_rope', x: x0 + T(8), y: T(rect.y + 9), seed: seed(), slot });
+    } else {
+      props.push({ kind: 'parasol', x: x0 + T(5.5), y: T(rect.y + 6.5) + 4, seed: seed(), slot });
+      props.push({ kind: 'parasol', x: x0 + T(10.5), y: T(rect.y + 6.5) + 4, seed: seed(), slot });
+      props.push({ kind: 'bush', x: x0 + T(3.5), y: T(rect.y + 4) + 4, seed: seed(), slot });
+      props.push({ kind: 'bush', x: x0 + T(12.5), y: T(rect.y + 4) + 4, seed: seed(), slot });
+      for (const cx of [3, 13]) props.push({ kind: 'flowers', x: x0 + T(cx), y: T(rect.y + 2), seed: slot * 3 + cx, slot });
+      props.push({ kind: 'bench', x: x0 + T(4), y: T(rect.y + 10) + 6, seed: slot, slot });
+      props.push({ kind: 'bench', x: x0 + T(12), y: T(rect.y + 10) + 6, seed: slot + 1, slot });
+      props.push({ kind: 'tree', x: x0 + T(1) + 6, y: T(rect.y + 11), seed: seed(), slot });
+      props.push({ kind: rng() < 0.5 ? 'pine' : 'tree', x: x0 + T(15) - 6, y: T(rect.y + 11) + 4, seed: seed(), slot });
+      props.push({ kind: 'rock', x: x0 + T(14), y: T(rect.y + 2) + 4, seed: slot + 3, slot });
+    }
   }
   return { slot, rect, walls, windows, floors, props };
 }
