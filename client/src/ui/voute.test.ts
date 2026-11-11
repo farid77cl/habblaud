@@ -7,7 +7,7 @@ class FakeEl {
   tagName: string;
   type = '';
   className = '';
-  textContent = '';
+  private _text = '';
   title = '';
   disabled = false;
   dataset: Record<string, string> = {};
@@ -15,6 +15,20 @@ class FakeEl {
   children: FakeEl[] = [];
   listeners = new Map<string, (() => void)[]>();
   private classes = new Set<string>();
+
+  get textContent(): string {
+    if (this.children.length === 0) return this._text;
+    return [this._text, ...this.children.map((c) => c.textContent)].filter(Boolean).join(' ');
+  }
+
+  set textContent(v: string) {
+    this._text = v;
+    this.children = [];
+  }
+
+  get firstChild(): FakeEl | null {
+    return this.children[0] ?? null;
+  }
 
   classList = {
     add: (...cs: string[]) => cs.forEach((c) => this.classes.add(c)),
@@ -53,6 +67,12 @@ class FakeEl {
 
   appendChild(child: FakeEl): FakeEl {
     this.children.push(child);
+    return child;
+  }
+
+  removeChild(child: FakeEl): FakeEl {
+    const idx = this.children.indexOf(child);
+    if (idx >= 0) this.children.splice(idx, 1);
     return child;
   }
 

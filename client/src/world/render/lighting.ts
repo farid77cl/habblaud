@@ -292,8 +292,9 @@ export class Lighting {
     }
   }
 
-  /** Copa, lounge e banheiros: luz por presença. Recepção e corredor ficam sempre acesos. */
+  /** Copa, lounge e banheiros: luz por presença. Recepção, corredor e todo o cabaré La Voûte ficam sempre acesos. */
   private presenceLit(vis: AreaVis): boolean {
+    if (isVoute()) return false;
     const kind = vis.layout.kind;
     return kind === 'cafe' || kind === 'lounge' || kind === 'restroom';
   }
@@ -311,7 +312,8 @@ export class Lighting {
     const room = vis.room;
     if (room) {
       const cover = room.phase === 'building' || room.phase === 'dismantling' ? buildAnim(room.phase, room.progress(now)).floor : 1;
-      return { lit: room.light(now), cover };
+      const baseLit = room.light(now);
+      return { lit: isVoute() ? Math.max(baseLit, 0.88) : baseLit, cover };
     }
     if (this.presenceLit(vis)) return { lit: this.coreLevel.get(vis.id) ?? 0, cover: 1 };
     return { lit: 1, cover: 1 };
@@ -480,7 +482,7 @@ export class Lighting {
       if (r.y === 0) {
         // janelas da parede norte -> gramado ao norte do prédio
         for (const w of vis.wallItems) if (w.kind === 'window') halo(warm, w.cx, -12, 58, 30, 0.55 * k * l);
-      } else if (vis.layout.kind !== 'corridor' && r.y + r.h >= BUILDING_H) {
+      } else if (!isVoute() && vis.layout.kind !== 'corridor' && r.y + r.h >= BUILDING_H) {
         // salas ao sul: brilho suave sobre a cerca viva e a calçada
         for (const fx of [0.25, 0.75]) halo(warm, (r.x + r.w * fx) * TILE, bh + 16, 96, 30, 0.35 * k * l);
       }
@@ -534,13 +536,16 @@ export class Lighting {
         } else if (f.kind === 'vending_machine' || f.kind === 'arcade') {
           ctx.globalAlpha = (voute ? 0.4 : 0.25) * k;
           ctx.drawImage(cool, Math.round(f.ax - 24), Math.round(f.ay - 36));
-        } else if (voute && (f.kind === 'meeting_table' || f.kind === 'cafe_table')) {
+        } else if (voute && (f.kind === 'meeting_table' || f.kind === 'cafe_table' || f.kind === 'pingpong_table')) {
           ctx.globalAlpha = 0.28 * k;
           ctx.drawImage(warm, Math.round(f.ax - 20), Math.round(f.ay - 28), 40, 40);
-        } else if (voute && (f.kind === 'filing_cabinet' || f.kind === 'binder_shelf')) {
+        } else if (voute && (f.kind === 'plant_small' || f.kind === 'plant_tall')) {
+          ctx.globalAlpha = 0.24 * k;
+          ctx.drawImage(warm, Math.round(f.ax - 16), Math.round(f.ay - 26), 32, 32);
+        } else if (voute && f.kind === 'binder_shelf') {
           ctx.globalAlpha = 0.25 * k;
           ctx.drawImage(gold, Math.round(f.ax - 20), Math.round(f.ay - 28), 40, 40);
-        } else if (voute && f.kind === 'sofa') {
+        } else if (voute && (f.kind === 'sofa' || f.kind === 'printer' || f.kind === 'filing_cabinet' || f.kind === 'toilet_stall')) {
           const led = glowSprite(cabaretBoothLedColor(now, boothIdx++, this.reduced), 28);
           ctx.globalAlpha = 0.45 * k;
           ctx.drawImage(led, Math.round(f.ax - 14), Math.round(f.ay - 28), 28, 28);

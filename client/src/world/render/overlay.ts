@@ -5,6 +5,7 @@
 // Os itens são POSICIONADOS em ordem decrescente de prioridade (quem chega depois desvia, vira
 // só o ícone ou é descartado) e DESENHADOS em ordem crescente (o mais importante fica por cima).
 import { TILE } from '../../art/api';
+import { isVoute } from '../../art/voute';
 import type { WorldOptions } from '../api';
 import type { Camera } from '../camera';
 import { COL_W, CORRIDOR_Y, SOUTH_Y } from '../constants';
@@ -51,6 +52,13 @@ const CORE_NAMES: Record<string, string> = {
   'core:banheiros': tr('Banheiros'),
   'core:copa': tr('Copa'),
   'core:lounge': tr('Lounge'),
+};
+
+const VOUTE_CORE_NAMES: Record<string, string> = {
+  'core:recepcao': 'Vestíbulo',
+  'core:banheiros': 'Tocadores',
+  'core:copa': 'Petit Bar',
+  'core:lounge': 'Foyer Rouge',
 };
 
 /** 'shell' = espera de shell: balão escuro de terminal com texto verde. 'say' = fala das rodas (papo, torcida, apostas). */
@@ -419,7 +427,8 @@ export class Overlay {
       const anim = room ? buildAnim(room.phase, room.progress(now)) : null;
       // texto da placa quando ela fica grande o bastante para ler; senão, o nome flutuante
       const rect = this.renderer.signRect(vis);
-      const text = room ? room.info.name : vis.id === 'core:recepcao' ? 'Habblaud' : null;
+      const voute = isVoute();
+      const text = room ? room.info.name : vis.id === 'core:recepcao' ? (voute ? 'La Voûte' : 'Habblaud') : null;
       const readable = !!rect && rect.h * zoom >= SIGN_MIN_PX;
       if (readable && rect && text && (!anim || anim.sign >= 1)) {
         const ax = this.sx(rect.x);
@@ -439,8 +448,9 @@ export class Overlay {
         // endereço antigo de uma mudança: o nome já está na sala nova
         if (!room.present || room.ghost || (anim && anim.walls < 0.6)) continue;
         this.drawRoomPill(room.info.name, cx, cy, colW - 8, room.accounts, this.countIn(room.id), room.theme.accent, room.lightOn);
-      } else if (CORE_NAMES[vis.id]) {
-        this.drawCorePill(CORE_NAMES[vis.id], cx, cy, colW - 8);
+      } else {
+        const coreName = (voute ? VOUTE_CORE_NAMES : CORE_NAMES)[vis.id];
+        if (coreName) this.drawCorePill(coreName, cx, cy, colW - 8);
       }
     }
   }

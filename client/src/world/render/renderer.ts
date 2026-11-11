@@ -289,6 +289,7 @@ export class Renderer {
       m.height = b.h;
       const mctx = m.getContext('2d')!;
       const img = mctx.createImageData(b.w, b.h);
+      const voute = isVoute();
       for (let ty = 0; ty < b.h; ty++) {
         for (let tx = 0; tx < b.w; tx++) {
           const wx = b.x + tx + 0.5;
@@ -296,9 +297,9 @@ export class Renderer {
           const fx = wx < 0 ? smooth(6, -b.x, -wx) : wx > bwT ? smooth(6, b.x + b.w - bwT, wx - bwT) : 0;
           const fy = wy < 0 ? smooth(5, -b.y, -wy) : wy > BUILDING_H ? smooth(12, b.y + b.h - BUILDING_H, wy - BUILDING_H) : 0;
           const i = (ty * b.w + tx) * 4;
-          img.data[i] = 18;
-          img.data[i + 1] = 40;
-          img.data[i + 2] = 26;
+          img.data[i] = voute ? 13 : 18;
+          img.data[i + 1] = voute ? 10 : 40;
+          img.data[i + 2] = voute ? 12 : 26;
           img.data[i + 3] = Math.round(Math.max(fx, fy) * VIGNETTE_ALPHA * 255);
         }
       }
@@ -1216,7 +1217,7 @@ export class Renderer {
       const dark = (1 - light) * strength * cover;
       if (dark <= 0.01) continue;
       const s = vis.layout.shade;
-      ctx.fillStyle = `rgba(8,12,36,${dark})`;
+      ctx.fillStyle = isVoute() ? `rgba(18,6,14,${dark})` : `rgba(8,12,36,${dark})`;
       ctx.fillRect(s.x, s.y, s.w, s.h);
     }
     this.lighting.drawGlows(ctx, this, view, now);

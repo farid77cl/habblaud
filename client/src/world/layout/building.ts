@@ -1,5 +1,6 @@
 // Montagem do prédio: núcleo + corredor + salas de projeto -> grade de caminhabilidade e spots.
 import { FURNITURE } from '../../art/api';
+import { isVoute } from '../../art/voute';
 import { BUILDING_H, COL_W } from '../constants';
 import { BLOCKED, FREE, SEAT, WalkGrid } from '../path/grid';
 import { furnitureBlocks, furnitureIsSeat } from './builder';
@@ -19,10 +20,16 @@ export interface BuildingLayout {
 }
 
 let coreCache: AreaLayout[] | null = null;
+let coreVoute: boolean | null = null;
 
-/** Áreas fixas do núcleo (calculadas uma vez). */
+/** Áreas fixas do núcleo (recalculadas quando o modo La Voûte muda). */
 export function coreAreas(): AreaLayout[] {
-  return (coreCache ??= [layoutReception(), layoutRestroom(), layoutCafe(), layoutLounge()]);
+  const v = isVoute();
+  if (!coreCache || coreVoute !== v) {
+    coreVoute = v;
+    coreCache = [layoutReception(), layoutRestroom(), layoutCafe(), layoutLounge()];
+  }
+  return coreCache;
 }
 
 /** Marca na grade as células caminháveis de uma área, os bloqueios e os assentos. */

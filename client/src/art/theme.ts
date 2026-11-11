@@ -47,7 +47,7 @@ export const THEME_COUNT = THEMES.length;
 export function roomTheme(seed: number, id?: string): RoomTheme {
   const list = isVoute() ? VOUTE_THEMES : THEMES;
   const n = list.length;
-  const fixed = isVoute() && id !== undefined ? VOUTE_ROOM[id] : undefined;
+  const fixed = id !== undefined ? VOUTE_ROOM[id] : undefined;
   const t = list[fixed ?? ((Math.floor(seed) % n) + n) % n];
   return { ...t, wall: { ...t.wall } };
 }

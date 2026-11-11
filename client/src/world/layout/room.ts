@@ -10,11 +10,16 @@
 // (mesa retangular, mesinhas redondas ou recanto com poltronas), os "cantos" da parte de baixo
 // (descanso, impressão, verde, mesa de pé) e a coluna de apoio junto à parede.
 import { FURNITURE, type Dir, type FurnitureKind, type RoomTheme, type WallStyle } from '../../art/api';
+import { VOUTE_THEMES } from '../../art/theme';
+import { isVoute, vouteStyleOf, type VouteStyle } from '../../art/voute';
 import { mulberry32 } from '../../../../shared/hash';
 import { DOOR_W, DOOR_X, TILE } from '../constants';
 import { AreaBuilder, type SpotOpts } from './builder';
 import { slotRect, slotSide } from './geometry';
 import type { AreaLayout, SpotDef, SpotKind } from './types';
+import { layoutVouteRoom } from './voute-rooms';
+
+const VOUTE_SLOT_STYLES: readonly VouteStyle[] = ['camarin', 'vip', 'barra', 'cabina', 'salon'];
 
 export interface RoomInput {
   id: string;
@@ -67,6 +72,11 @@ export function roomVariant(seed: number): RoomVariant {
 }
 
 export function layoutProjectRoom(room: RoomInput, theme: RoomTheme): AreaLayout {
+  if (isVoute()) {
+    const style = vouteStyleOf(room.id) ?? VOUTE_SLOT_STYLES[((room.slot % VOUTE_SLOT_STYLES.length) + VOUTE_SLOT_STYLES.length) % VOUTE_SLOT_STYLES.length];
+    const vTheme = VOUTE_THEMES[style] ?? theme;
+    return layoutVouteRoom(style, room, vTheme);
+  }
   const rect = slotRect(room.slot);
   const side = slotSide(room.slot);
   const rng = mulberry32(room.seed ^ 0x5eed);

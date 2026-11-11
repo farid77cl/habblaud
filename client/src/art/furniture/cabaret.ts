@@ -144,65 +144,78 @@ function vouteChairBack(_variant: string | undefined): BufFurniture {
   return { base, front };
 }
 
-// 5. bookshelf (2x1): Vitrina de champán y licores con iluminación cálida.
-function vouteBookshelf(seed: number): BufFurniture {
+// 5. bookshelf (2x1): Perchero de vestuario cabaret con barra dorada y 3 trajes colgados (boa fucsia, vestido burdeos, estola marfil).
+function vouteBookshelf(_seed: number): BufFurniture {
   const s = floorSheet(2, 1, 20);
   const b = s.buf;
-  const r = rngOf(seed, 105);
-  topFace(b, 1, -18, 30, 3, GOLD);
-  frontFace(b, 1, -15, 30, 30, MAHOGANY);
-  b.rect(3, -13, 26, 26, '#240b16');
-  const bottles = [VP.or, VP.rn, '#58c472', VP.ol, '#d84a6e'];
-  for (let shelf = 0; shelf < 3; shelf++) {
-    const sy = -5 + shelf * 8;
-    b.rect(3, sy, 26, 2, GOLD.base);
-    b.hline(3, 28, sy, VP.ol);
-    let x = 4;
-    while (x < 27) {
-      const col = bottles[Math.floor(r() * bottles.length)];
-      const h = 4 + Math.floor(r() * 2);
-      b.rect(x, sy - h, 2, h, col);
-      b.set(x, sy - h - 1, VP.ol);
-      x += 3 + Math.floor(r() * 2);
-    }
-  }
+  // Base de terciopelo y ébano con borde dorado
+  b.rect(2, 11, 28, 3, '#1e1619');
+  b.hline(2, 29, 11, VP.or);
+  // Postes laterales de bronce (#d4a64a) y travesaño superior
+  b.rect(3, -16, 2, 27, VP.or);
+  b.rect(27, -16, 2, 27, VP.or);
+  b.rect(3, -17, 26, 2, VP.ol);
+  b.hline(3, 28, -15, VP.or);
+  // Percha 1 (izquierda): Vestido de plumas / boa fucsia (#ff3fa4 / #ff8fcf)
+  b.vline(9, -15, -12, VP.or);
+  b.rect(6, -12, 7, 19, VP.rn);
+  b.rect(7, -11, 5, 6, '#ff8fcf');
+  b.hline(6, 12, 5, VP.ol);
+  // Percha 2 (centro): Capa / vestido de terciopelo burdeos (#8c2240 / #5a1426) con corset negro
+  b.vline(16, -15, -12, VP.or);
+  b.rect(13, -12, 7, 20, VP.b5);
+  b.rect(14, -10, 5, 6, '#0d0a0c');
+  b.hline(14, 18, -7, VP.or);
+  // Percha 3 (derecha): Estola de piel blanca marfil (#f3e6d0) y vestido noir (#0d0a0c)
+  b.vline(23, -15, -12, VP.or);
+  b.rect(20, -12, 6, 18, '#0d0a0c');
+  b.rect(20, -12, 6, 7, '#f3e6d0');
+  b.hline(20, 25, 4, VP.or);
   b.outline();
   contact(b, 0, 14, 32, 3, 0.22);
   return { base: s };
 }
 
-// 6. filing_cabinet (1x1): Baúl de vestuario con herrajes de latón.
+// 6. filing_cabinet (1x1): Cabina de luces y sonido (módulo rack con 6 LEDs #ff3fa4/#ffe08a y parlante dorado).
 function vouteCabinet(): BufFurniture {
   const s = floorSheet(1, 1, 14);
   const b = s.buf;
-  topFace(b, 2, -10, 12, 4, BURGUNDY);
-  frontFace(b, 2, -6, 12, 21, BURGUNDY);
+  b.rect(2, -10, 12, 4, '#1e1619');
+  b.rect(2, -6, 12, 21, '#0d0a0c');
   b.hline(2, 13, -6, VP.or);
-  b.hline(2, 13, 1, VP.or);
-  b.hline(2, 13, 8, VP.or);
-  for (const gy of [-3, 4, 11]) {
-    b.rect(6, gy, 4, 2, GOLD.hi);
-  }
-  b.rect(5, -9, 6, 2, VP.rn);
+  b.hline(2, 13, 3, VP.or);
+  // 6 LEDs alternados (#ff3fa4 y #ffe08a) en el panel superior
+  const leds = [VP.rn, VP.ol, VP.rn, VP.ol, VP.rn, VP.ol] as const;
+  leds.forEach((col, i) => {
+    const lx = 3 + (i % 3) * 4;
+    const ly = -4 + Math.floor(i / 3) * 3;
+    b.rect(lx, ly, 2, 2, col);
+  });
+  // Parlante con rejilla dorada (#d4a64a) abajo
+  b.rect(4, 5, 8, 8, '#1e1619');
+  b.ellipse(7.5, 9, 3, 3, VP.or);
+  b.set(7, 9, '#0d0a0c');
   b.outline();
   contact(b, 1, 14, 14, 3, 0.22);
   return { base: s };
 }
 
-// 7. printer (1x1): Gramófono / consola DJ con trompeta dorada y vinilo.
+// 7. printer (1x1): Consola de luces y sonido con mesa mezcladora, 6 LEDs (#ff3fa4/#ffe08a) y monitor de retorno.
 function voutePrinter(): BufFurniture {
   const s = floorSheet(1, 1, 12);
   const b = s.buf;
-  topFace(b, 2, 1, 12, 4, MAHOGANY);
-  frontFace(b, 2, 5, 12, 10, MAHOGANY);
+  b.rect(2, 0, 12, 5, '#1e1619');
+  b.rect(2, 5, 12, 10, '#0d0a0c');
   b.hline(2, 13, 5, VP.or);
-  // Plato de vinilo y trompeta dorada
-  b.rect(4, 2, 6, 2, '#12090e');
-  b.set(6, 2, VP.rn);
-  b.vline(10, -5, 2, GOLD.dk);
-  b.ellipse(7, -5, 3.2, 3.2, GOLD.base);
-  b.ellipse(6.5, -5, 2, 2, VP.ol);
-  b.set(6, -5, '#3a0f1e');
+  // 6 LEDs de mezcla en la superficie (#ff3fa4 / #ffe08a)
+  for (let i = 0; i < 6; i++) {
+    b.set(3 + i * 2, 2, i % 2 === 0 ? VP.rn : VP.ol);
+    b.set(3 + i * 2, 3, VP.or);
+  }
+  // Rejilla de parlante dorada en el frente
+  b.rect(4, 7, 8, 6, VP.or);
+  b.rect(5, 8, 6, 4, '#1e1619');
+  b.hline(5, 10, 9, VP.ol);
   b.outline();
   contact(b, 1, 14, 14, 3, 0.2);
   return { base: s };
@@ -222,41 +235,46 @@ function vouteTrashBin(): BufFurniture {
   return { base: s };
 }
 
-// 9. plant_small (1x1): Maceta dorada con rosas rojas / orquídea nocturna.
-function voutePlantSmall(variant?: string): BufFurniture {
+// 9. plant_small (1x1): Pedestal negro (#1e1619) con arreglo de plumas fucsias (#ff3fa4) y candelabro dorado.
+function voutePlantSmall(_variant?: string): BufFurniture {
   const s = floorSheet(1, 1, 8);
   const b = s.buf;
-  topFace(b, 5, 8, 6, 2, GOLD);
-  frontFace(b, 5, 10, 6, 5, GOLD);
-  const g = ramp('#28593a', 0.08);
-  b.ellipse(7.5, 5, 3.5, 3.5, g.base);
-  b.ellipse(6.5, 4, 2.5, 2.5, g.lt);
-  const flower = variant === 'succulent' ? VP.rn : '#d81e48';
-  for (const [fx, fy] of [[6, 2], [9, 3], [7, 5], [5, 5]] as const) {
-    b.rect(fx, fy, 2, 2, flower);
-    b.set(fx, fy, VP.ol);
+  b.rect(5, 8, 6, 7, '#1e1619');
+  b.hline(5, 10, 8, VP.or);
+  b.hline(4, 11, 14, VP.or);
+  // Penacho de plumas de avestruz fucsias (#ff3fa4 / #ff8fcf) y burdeos (#8c2240)
+  b.ellipse(7.5, 5, 4, 3.5, VP.b5);
+  b.ellipse(7.5, 4, 3.5, 3, VP.rn);
+  b.ellipse(7, 3, 2, 2, '#ff8fcf');
+  // 3 velas encendidas (#ffe08a)
+  for (const vx of [5, 7, 9]) {
+    b.vline(vx, 1, 3, '#f3e6d0');
+    b.set(vx, 0, VP.ol);
   }
   b.outline();
   contact(b, 4, 14, 8, 2, 0.18);
   return { base: s };
 }
 
-// 10. plant_tall (1x1): Palmera de salón en macetero de latón dorado.
+// 10. plant_tall (1x1): Pedestal alto negro (#1e1619) con boa de plumas (#ff3fa4) y candelabro de 3 velas (#d4a64a / #ffe08a).
 function voutePlantTall(_variant?: string): BufFurniture {
   const s = floorSheet(1, 1, 16);
   const b = s.buf;
-  topFace(b, 4, 7, 8, 2, GOLD);
-  frontFace(b, 4, 9, 8, 6, GOLD);
-  b.vline(7, -3, 7, '#5e3a24');
-  b.vline(8, -3, 7, '#442818');
-  const g = ramp('#24583c', 0.08);
-  for (const [dx, dy] of [[-6, -2], [6, -2], [-7, 2], [7, 2], [-4, -5], [4, -5], [0, -6]] as const) {
-    b.line(7, -3, 7 + dx, -3 + dy, g.base);
-    b.line(7, -4, 7 + dx, -4 + dy, g.lt);
+  // Pedestal columna negra (#1e1619) con capiteles dorados (#d4a64a)
+  b.rect(4, 5, 8, 10, '#1e1619');
+  b.hline(4, 11, 5, VP.or);
+  b.hline(3, 12, 14, VP.or);
+  // Boa de plumas fucsia (#ff3fa4) y carmesí (#8c2240) envolviendo la copa
+  b.ellipse(7.5, 2, 4.5, 3.5, VP.b5);
+  b.ellipse(7.5, 1, 4, 3, VP.rn);
+  b.ellipse(7, 0, 2.5, 2, '#ff8fcf');
+  // Candelabro dorado de 3 brazos con velas (#f3e6d0) y llamas (#ffe08a)
+  b.vline(7, -6, 1, VP.or);
+  b.hline(4, 10, -4, VP.or);
+  for (const vx of [4, 7, 10]) {
+    b.vline(vx, -7, -5, '#f3e6d0');
+    b.set(vx, -8, VP.ol);
   }
-  b.set(5, -5, VP.ol);
-  b.set(10, -4, VP.ol);
-  b.set(7, -7, VP.rn);
   b.outline();
   contact(b, 3, 14, 10, 3, 0.2);
   return { base: s };
@@ -850,20 +868,38 @@ function vouteCoffeeTable(): BufFurniture {
   return { base: s };
 }
 
-// 40. pingpong_table (3x2): Mesa de roulette / billar francés con paño carmesí.
+// 40. pingpong_table (3x2): Gran piano de cola negro (#0d0a0c) con teclado marfil (#f3e6d0) y candelabro dorado (#d4a64a).
 function voutePingpongTable(): BufFurniture {
   const s = floorSheet(3, 2, 6);
   const b = s.buf;
-  for (const x of [5, 18, 29, 41]) b.rect(x, 19, 2, 11, GOLD.dk);
-  topFace(b, 1, 3, 46, 15, MAHOGANY);
-  frontFace(b, 1, 18, 46, 3, GOLD);
-  b.rect(3, 5, 42, 11, VP.b5);
-  border(b, 3, 5, 42, 11, VP.or);
-  b.vline(23, 3, 17, VP.or);
-  b.vline(24, 3, 17, VP.ol);
-  b.ellipse(14, 10, 3.5, 3.5, GOLD.base);
-  b.ellipse(14, 10, 2, 2, '#1a0812');
-  b.set(14, 10, VP.rn);
+  // Patas torneadas en ébano y bronce con pedales dorados
+  for (const x of [6, 22, 39]) {
+    b.rect(x, 19, 3, 10, '#0d0a0c');
+    b.hline(x, x + 2, 28, VP.or);
+  }
+  b.rect(18, 25, 5, 3, VP.or);
+  // Caja armónica del piano de cola (curva en el lado derecho, recta al frente/izquierda)
+  b.rect(3, 3, 32, 16, '#0d0a0c');
+  b.rect(35, 5, 9, 12, '#0d0a0c');
+  b.rect(4, 4, 30, 13, '#1e1619');
+  b.rect(34, 6, 8, 9, '#1e1619');
+  // Filete dorado perimetral y atril
+  b.hline(3, 34, 18, VP.or);
+  b.rect(12, 2, 12, 3, VP.or);
+  // Tapa entreabierta con puntal dorado e interior carmesí (#8c2240)
+  b.rect(7, 5, 24, 7, VP.b5);
+  b.line(30, 12, 35, 3, VP.or);
+  // Teclado de marfil (#f3e6d0) con sostenidos en ébano (#0d0a0c) en el frente izquierdo/sur
+  b.rect(5, 14, 24, 4, '#f3e6d0');
+  for (let kx = 6; kx < 28; kx += 2) {
+    if (kx % 6 !== 0) b.rect(kx, 14, 1, 2, '#0d0a0c');
+  }
+  // Candelabro dorado (#d4a64a) con 3 velas encendidas (#ffe08a) sobre la cola
+  b.rect(36, 7, 5, 2, VP.or);
+  for (const cx of [36, 38, 40]) {
+    b.vline(cx, 4, 6, '#f3e6d0');
+    b.set(cx, 3, VP.ol);
+  }
   b.outline();
   contact(b, 2, 28, 44, 5, 0.22);
   return { base: s };

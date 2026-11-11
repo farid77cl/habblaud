@@ -70,7 +70,7 @@ export function montarBotonVoute(
     btn.classList?.toggle('is-active', on);
     btn.setAttribute('aria-pressed', String(on));
     btn.title = on ? tr('Volver a la oficina') : tr('Entrar a La Voûte');
-    btn.textContent = on ? '✦ La Voûte LV ●' : '✦ La Voûte LV';
+    while (btn.firstChild) btn.removeChild(btn.firstChild);
     btn.appendChild(star);
     btn.appendChild(label);
     btn.appendChild(short);

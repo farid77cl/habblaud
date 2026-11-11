@@ -54,6 +54,27 @@ export function drawScreen(ctx: Ctx, r: Rect, mode: ScreenMode, t: number, seed:
   if (w <= 0 || h <= 0) return;
   clipTo(x, y, w, h);
   const s = seed >>> 0;
+  if (isVoute()) {
+    // Espejo de tocador / pantalla cabaret cálida en terciopelo borgoña, oro y destellos cálidos
+    fill(ctx, x, y, w, h, mode === 'off' ? VP.n7 : VP.b9);
+    fill(ctx, x, y, w, 1, VP.or);
+    fill(ctx, x, y + h - 1, w, 1, VP.b7);
+    const k0 = w - 3 - Math.floor(h / 3);
+    for (let i = 0; i < h; i++) {
+      const sx = x + k0 - i;
+      fill(ctx, sx, y + i, 2, 1, mode === 'off' ? VP.b9 : VP.b6);
+      fill(ctx, sx + 2, y + i, 1, 1, mode === 'off' ? VP.n7 : VP.ol);
+    }
+    if (mode !== 'off' && w >= 4 && h >= 3) {
+      const pulse = (Math.floor(t / 600) + (s % 3)) % 2;
+      fill(ctx, x + 1, y + 1, 1, 1, pulse ? VP.ol : VP.cr);
+      fill(ctx, x + w - 2, y + 1, 1, 1, pulse ? VP.cr : VP.ol);
+      if (w >= 6 && h >= 4) {
+        fill(ctx, x + Math.floor(w / 2) - 1, y + Math.floor(h / 2), 2, 1, VP.rn);
+      }
+    }
+    return;
+  }
   switch (mode) {
     case 'off': {
       // Desligado: vidro azul-marinho fosco com reflexo diagonal largo + um fino (lê como tela
@@ -677,7 +698,6 @@ function skyAt(hour: number): { top: string; bottom: string; night: number; day:
 }
 
 export function drawWindowView(ctx: Ctx, r: Rect, hour: number, t: number, seed: number): void {
-  if (isVoute()) hour = 23;
   const x = Math.round(r.x);
   const y = Math.round(r.y);
   const w = Math.round(r.w);
@@ -685,6 +705,33 @@ export function drawWindowView(ctx: Ctx, r: Rect, hour: number, t: number, seed:
   if (w <= 0 || h <= 0) return;
   clipTo(x, y, w, h);
   const s = seed >>> 0;
+  if (isVoute()) {
+    // Cielo nocturno parisino #0d0a0c con 9 estrellas fijas #f3e6d0 y alféizar dorado #d4a64a
+    fill(ctx, x, y, w, h, VP.n9);
+    for (let k = 0; k < 9; k++) {
+      const hh = h32(s, k + 101);
+      const sx = x + (hh % w);
+      const sy = y + ((hh >>> 8) % Math.max(1, Math.floor(h * 0.65)));
+      fill(ctx, sx, sy, 1, 1, VP.cr);
+    }
+    // Silueta urbana en ébano y terciopelo con destellos cálidos
+    let bx = x;
+    let idx = 0;
+    while (bx < x + w) {
+      const hh = h32(s, idx + 300);
+      const bw = 3 + (hh % 4);
+      const bh = 2 + ((hh >>> 4) % Math.max(2, Math.floor(h * 0.35)));
+      const ww = Math.min(bw, x + w - bx);
+      fill(ctx, bx, y + h - bh, ww, bh, idx % 2 === 0 ? VP.n7 : VP.b9);
+      if (ww >= 3 && bh >= 3) {
+        fill(ctx, bx + 1, y + h - bh + 1, 1, 1, idx % 3 === 0 ? VP.rn : VP.ol);
+      }
+      bx += bw;
+      idx++;
+    }
+    fill(ctx, x, y + h - 1, w, 1, VP.or);
+    return;
+  }
   const sky = skyAt(hour);
   for (let i = 0; i < h; i++) fill(ctx, x, y + i, w, 1, mix(sky.top, sky.bottom, i / Math.max(1, h - 1)));
   // Estrelas e lua.
