@@ -820,8 +820,24 @@ describe('residentes de La Voûte', () => {
     const s = mk(true).commit().snapshot;
     expect(s.agents).toHaveLength(23);
     expect(s.agents.every((a) => a.status === 'idle')).toBe(true);
-    const room = s.rooms.find((r) => r.id === s.agents[0].roomId);
-    expect(room?.name).toBe('La Voûte');
+    // repartidas por oficio en cinco salas de cabaret, cada una con varias
+    const porSala = new Map<string, string[]>();
+    for (const a of s.agents) porSala.set(a.roomId, [...(porSala.get(a.roomId) ?? []), a.name]);
+    expect(porSala.size).toBe(5);
+    const nombre = (id: string) => s.rooms.find((r) => r.id === id)?.name;
+    const camarin = [...porSala].find(([id]) => nombre(id) === 'Camarín');
+    expect(camarin?.[1]).toEqual(expect.arrayContaining(['Chanel', 'Prada', 'Barbie']));
+    const cabina = [...porSala].find(([id]) => nombre(id) === 'Cabina');
+    expect(cabina?.[1]).toEqual(expect.arrayContaining(['Roxxy', 'Trixie', 'Coni', 'Candy']));
+  });
+  it('la principal real del proyecto LaVouteDAnais se llama Ele con su look, sin duplicar a la residente', () => {
+    const o = mk(true);
+    o.addMain({ id: 'acc:1', account: 'acc', sessionId: 's1', cwd: '/c/Git/LaVouteDAnais', role: 'x', startedAt: 0, status: 'working' });
+    const s = o.commit().snapshot;
+    const eles = s.agents.filter((a) => a.name === 'Ele');
+    expect(eles).toHaveLength(1);
+    expect(eles[0].id).toBe('acc:1');
+    expect(eles[0].parts?.hairStyle).toBe('long');
   });
   it('una real del mismo tipo ocupa su asiento sin duplicarse', () => {
     const o = mk(true);

@@ -11165,11 +11165,9 @@ html.voute .ui-root {
 html.voute body { background: #12040a; }
 
 .voute-toggle {
-  position: fixed;
-  left: var(--gap, 10px);
-  bottom: calc(var(--feed-head, 38px) + var(--gap, 10px) * 2);
-  z-index: 60;
   pointer-events: auto;
+  white-space: nowrap;
+  margin-left: 6px;
   padding: 6px 12px;
   border-radius: var(--radius-sm, 7px);
   border: 1px solid #ff4fa3;

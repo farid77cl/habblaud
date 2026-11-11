@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentInfo } from './types';
-import { VOUTE_ROOM_ID, residentesAusentes } from './voute-residentes';
+import { VOUTE_SALAS, residentesAusentes } from './voute-residentes';
 import { VOUTE_AGENTES } from './voute-agentes';
 
 const real = (name: string, role = 'x'): AgentInfo => ({ id: name, name, role, kind: 'sub', status: 'working' }) as AgentInfo;
 
 describe('residentes', () => {
-  it('sin nadie real salen todas, en reposo, en la sala de La Voûte', () => {
+  it('sin nadie real salen todas, en reposo, repartidas en las salas de La Voûte', () => {
     const r = residentesAusentes([], 1000);
     expect(r).toHaveLength(Object.keys(VOUTE_AGENTES).length);
     for (const a of r) {
       expect(a.status).toBe('idle');
-      expect(a.roomId).toBe(VOUTE_ROOM_ID);
+      expect(VOUTE_SALAS.map((x) => x.id)).toContain(a.roomId);
       expect(a.parts).toBeDefined();
       expect(a.recent).toEqual([]);
     }
