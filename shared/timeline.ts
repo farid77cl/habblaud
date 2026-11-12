@@ -230,7 +230,8 @@ export function compactAccount(a: AccountInfo, demo = false): TimelineAccount {
 }
 
 /** Agentes, salas e contas do modo demonstração usam o prefixo "demo:" (ver Office.setDemo). */
-export const isDemoId = (id: string): boolean => id.startsWith('demo:');
+/** Ids que no son de este escritorio real: la demostración (`demo:`) y La Voûte (`voute:`, solo de la vista). */
+export const isDemoId = (id: string): boolean => id.startsWith('demo:') || id.startsWith('voute:');
 
 export function compactSnapshot(snap: OfficeSnapshot, isDemo: (id: string) => boolean = isDemoId): TimelineFrame {
   return {

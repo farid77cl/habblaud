@@ -28,8 +28,6 @@ import { nameKey, type AppearanceParts } from '../../shared/appearance';
 import { DemoSimulator } from '../../shared/demo/simulator';
 import { describeGitHubEvent, githubEventKey, RoomEffects, type GitHubEvent } from '../../shared/github';
 import { hash32 } from '../../shared/hash';
-import { vouteAgente } from '../../shared/voute-agentes';
-import { VOUTE_SALAS, residentesAusentes, vouteSalaNombre } from '../../shared/voute-residentes';
 import { applyPermission } from '../permissions/registry';
 import type { NameStore, StoredCharacter } from './names';
 import { normalizeCwd, roomDisplayNames, SlotAllocator } from './rooms';
@@ -82,8 +80,6 @@ export interface OfficeDeps {
   ptys?: () => { status: PtyStatus; list: PtyInfo[] };
   /** Habblaud World (WorldService.meta; ver OfficeSnapshot.meta.world). */
   world?: () => WorldMeta;
-  /** La Voûte: todo el roster siempre presente, en reposo (una real del mismo tipo ocupa su asiento). */
-  residents?: boolean;
   now?: () => number;
 }
 
@@ -593,9 +589,7 @@ export class Office {
       this.reactivateSub(p.id);
       return true;
     }
-    // Tipos de La Voûte: nome e look fixos; os demais seguem sorteados.
-    const fixo = vouteAgente(p.role);
-    const person = fixo ? { name: fixo.name, look: 'f' as const } : this.deps.names.assign(p.id, this.takenNames());
+    const person = this.deps.names.assign(p.id, this.takenNames());
     const info: AgentInfo = {
       id: p.id,
       kind: 'sub',
@@ -615,7 +609,6 @@ export class Office {
       stats: zeroStats(),
       seed: hash32(p.id),
     };
-    if (fixo) info.parts = { ...fixo.parts };
     if (parent.info.provider) info.provider = parent.info.provider;
     if (p.title) info.title = p.title;
     if (p.background) info.background = true;
@@ -962,12 +955,11 @@ export class Office {
     const now = this.now();
     const entries = new Map(this.rooms);
     for (const r of this.demoSnap?.rooms ?? []) entries.set(r.id, { path: r.path, createdAt: r.createdAt });
-    if (this.deps.residents) for (const sala of VOUTE_SALAS) entries.set(sala.id, { path: sala.name, createdAt: this.deps.startedAt });
     this.slots.sync(entries.keys(), now);
     const rooms: RoomInfo[] = [...entries]
       .map(([id, r]) => ({
         id,
-        name: vouteSalaNombre(id) ?? this.roomName(id),
+        name: this.roomName(id),
         path: r.path,
         slot: this.slots.slotOf(id) ?? 0,
         seed: hash32(id),
@@ -981,18 +973,6 @@ export class Office {
     }
     const perms = this.deps.permissions?.();
     const real = [...this.agents.values()].map((r) => applyPermission(cloneAgent(r.info), perms?.get(r.info.id)));
-    // La principal del proyecto LaVouteDAnais es Ele, con su look fijo (salvo personaje elegido a mano).
-    const ele = vouteAgente('ele');
-    if (this.deps.residents && ele) {
-      for (const a of real) {
-        const base = (this.rooms.get(a.roomId)?.path ?? '').replace(/[\/]+$/, '').split(/[\/]/).pop()?.toLowerCase();
-        if (a.kind === 'main' && !a.custom && base === 'lavoutedanais') {
-          a.name = ele.name;
-          a.parts = ele.parts;
-        }
-      }
-    }
-    const residentes = this.deps.residents ? residentesAusentes(real, this.deps.startedAt) : [];
     const reach = this.deps.messages?.();
     // Mensagens pelo escritório: principais presentes cuja sessão está com o plugin conectado. No demo quem decide é
     // o simulador; com o recurso desligado, ninguém recebe.
@@ -1010,7 +990,7 @@ export class Office {
       rev: this.rev,
       serverTime: now,
       rooms,
-      agents: [...real, ...residentes, ...demoAgents].map(trim),
+      agents: [...real, ...demoAgents].map(trim),
       accounts: [...this.deps.accounts(sessions), ...(this.demoSnap?.accounts ?? [])],
       ...(ptys ? { ptys: ptys.list } : {}),
       meta: {

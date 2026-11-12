@@ -9,6 +9,7 @@ import {
   diffFrames,
   frameOf,
   isDayKey,
+  isDemoId,
   keyframeOf,
   parseTimeline,
   shiftDay,
@@ -211,5 +212,13 @@ describe('timeline: leitura do arquivo', () => {
     const plain = compactAgent(agent('.claude:2'));
     expect('parts' in plain).toBe(false);
     expect(toAgentInfo(plain).parts).toBeUndefined();
+  });
+});
+
+describe('La Voûte nunca entra al historial', () => {
+  it('los ids voute:* cuentan como no reales (se omiten del historial y del timeline)', () => {
+    expect(isDemoId('voute:chanel')).toBe(true);
+    expect(isDemoId('voute:escenario')).toBe(true);
+    expect(isDemoId('/p/real')).toBe(false);
   });
 });

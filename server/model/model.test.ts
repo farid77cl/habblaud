@@ -322,15 +322,12 @@ describe('Office', () => {
     expect(office.get('acc:9')).not.toHaveProperty('provider');
   });
 
-  it('subagente de La Voûte sai com nome e look fixos; os demais ao acaso', () => {
+  it('subagente com role de La Voûte sigue el sorteo del servidor: nombre y look fijos son solo de la vista', () => {
     const { office, now } = makeOffice();
     office.addMain({ id: 'acc:1', provider: 'claude', account: 'acc', sessionId: 's1', cwd: '/p/a', role: 'x', startedAt: now(), status: 'working' });
-    for (const n of [1, 2]) office.addSub({ id: `s1:c${n}`, parentId: 'acc:1', sessionId: 's1', role: 'chanel', background: false, startedAt: now() });
-    office.addSub({ id: 's1:g', parentId: 'acc:1', sessionId: 's1', role: 'Explore', background: false, startedAt: now() });
-    expect(office.get('s1:c1')).toMatchObject({ name: 'Chanel', look: 'f', parts: { hairStyle: 'bob' } });
-    expect(office.get('s1:c2')?.name).toBe('Chanel');
-    expect(office.get('s1:g')?.name).not.toBe('Chanel');
-    expect(office.get('s1:g')?.parts).toBeUndefined();
+    office.addSub({ id: 's1:c1', parentId: 'acc:1', sessionId: 's1', role: 'chanel', background: false, startedAt: now() });
+    expect(office.get('s1:c1')?.name).not.toBe('Chanel');
+    expect(office.get('s1:c1')?.parts).toBeUndefined();
   });
 
   it('rev só muda quando algo mudou', () => {
@@ -809,42 +806,22 @@ describe('Office: personagem do projeto', () => {
   });
 });
 
-describe('residentes de La Voûte', () => {
-  const mk = (residents?: boolean) =>
-    new Office({ names: new NameStore(null), version: 't', startedAt: 0, accounts: () => [], sources: () => [], accountName: () => undefined, ...(residents ? { residents } : {}) });
+describe('La Voûte no vive en el estado del servidor (datos verdaderos del World)', () => {
+  const mk = () =>
+    new Office({ names: new NameStore(null), version: 't', startedAt: 0, accounts: () => [], sources: () => [], accountName: () => undefined });
 
-  it('apagado por defecto: el snapshot no trae residentes', () => {
-    expect(mk().commit().snapshot.agents).toEqual([]);
+  it('sin agentes reales el snapshot no trae residentes ni salas', () => {
+    const s = mk().commit().snapshot;
+    expect(s.agents).toEqual([]);
+    expect(s.rooms).toEqual([]);
   });
-  it('encendido: todo el roster en reposo, en la sala La Voûte', () => {
-    const s = mk(true).commit().snapshot;
-    expect(s.agents).toHaveLength(23);
-    expect(s.agents.every((a) => a.status === 'idle')).toBe(true);
-    // repartidas por oficio en cinco salas de cabaret, cada una con varias
-    const porSala = new Map<string, string[]>();
-    for (const a of s.agents) porSala.set(a.roomId, [...(porSala.get(a.roomId) ?? []), a.name]);
-    expect(porSala.size).toBe(5);
-    const nombre = (id: string) => s.rooms.find((r) => r.id === id)?.name;
-    const camarin = [...porSala].find(([id]) => nombre(id) === 'Camarín');
-    expect(camarin?.[1]).toEqual(expect.arrayContaining(['Chanel', 'Prada', 'Barbie']));
-    const cabina = [...porSala].find(([id]) => nombre(id) === 'Cabina');
-    expect(cabina?.[1]).toEqual(expect.arrayContaining(['Roxxy', 'Trixie', 'Coni', 'Candy']));
-  });
-  it('la principal real del proyecto LaVouteDAnais se llama Ele con su look, sin duplicar a la residente', () => {
-    const o = mk(true);
+  it('una principal real en LaVouteDAnais conserva su nombre y su look: el servidor no los toca', () => {
+    const o = mk();
     o.addMain({ id: 'acc:1', account: 'acc', sessionId: 's1', cwd: '/c/Git/LaVouteDAnais', role: 'x', startedAt: 0, status: 'working' });
     const s = o.commit().snapshot;
-    const eles = s.agents.filter((a) => a.name === 'Ele');
-    expect(eles).toHaveLength(1);
-    expect(eles[0].id).toBe('acc:1');
-    expect(eles[0].parts?.hairStyle).toBe('long');
-  });
-  it('una real del mismo tipo ocupa su asiento sin duplicarse', () => {
-    const o = mk(true);
-    o.addMain({ id: 'acc:1', account: 'acc', sessionId: 's1', cwd: '/p/a', role: 'x', startedAt: 0, status: 'working' });
-    o.addSub({ id: 'sub1', parentId: 'acc:1', sessionId: 's1', role: 'chanel', startedAt: 0, background: false });
-    const names = o.commit().snapshot.agents.map((a) => a.name);
-    expect(names.filter((n) => n === 'Chanel')).toHaveLength(1);
-    expect(names).toHaveLength(23 + 1);
+    expect(s.agents).toHaveLength(1);
+    expect(s.agents[0].name).not.toBe('Ele');
+    expect(s.agents.some((a) => a.id.startsWith('voute:'))).toBe(false);
+    expect(s.rooms.some((r) => r.id.startsWith('voute:'))).toBe(false);
   });
 });
