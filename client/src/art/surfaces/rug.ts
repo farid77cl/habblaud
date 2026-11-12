@@ -14,6 +14,7 @@ export function renderRug(w: number, h: number, color: string, seed: number): Pi
     const isStage = style === '#6e1a30';
     const isVip = style === '#d4a64a';
     const isCabina = style === '#ff3fa4';
+    const isIvory = style === '#e8d5c0';
 
     const fringeCol = isCabina ? VP.rn : isBoudoir ? '#ff8fcf' : VP.or;
     for (let y = 2; y < h - 2; y += 2) {
@@ -23,7 +24,7 @@ export function renderRug(w: number, h: number, color: string, seed: number): Pi
     // Borde exterior dorado 1px (#d4a64a) o neón (#ff3fa4 en Cabina).
     b.rect(x0, 0, x1 - x0 + 1, h, isCabina ? VP.rn : isVip ? VP.ol : VP.or);
     // Línea interna #3a0f1e (o dorada en VIP).
-    b.rect(x0 + 1, 1, x1 - x0 - 1, h - 2, isVip ? VP.or : '#3a0f1e');
+    b.rect(x0 + 1, 1, x1 - x0 - 1, h - 2, isVip ? VP.or : isIvory ? '#c9577f' : '#3a0f1e');
     const fx = x0 + 2;
     const fy = 2;
     const fw = Math.max(0, x1 - x0 - 3);
@@ -62,6 +63,12 @@ export function renderRug(w: number, h: number, color: string, seed: number): Pi
           else if (mx === 1 && my === 1) c = VP.ol;
           else if (mx === 1 || my === 1) c = VP.or;
           else if ((x + y) % 2 === 0) c = VP.b5;
+        } else if (isIvory) {
+          // Habitación de Anaïs: damasco marfil (#e8d5c0) con rombos rosa empolvado y puntos dorados.
+          c = '#e8d5c0';
+          if (x === 1 || x === fw - 2 || y === 1 || y === fh - 2) c = '#c9577f';
+          else if (mx === 2 && my === 2) c = VP.or;
+          else if ((mx === 0 && my === 2) || (mx === 2 && my === 0) || (mx === 1 && my === 1)) c = '#d9b8a8';
         } else if (isCabina) {
           // Cabina: terciopelo nocturno (#2a0a12) con rombos fucsia neón (#ff3fa4).
           c = '#2a0a12';

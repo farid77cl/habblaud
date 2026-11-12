@@ -24,26 +24,21 @@ describe('La Voûte — temas de sala y superficies', () => {
     setVouteMode(false);
   });
 
-  it('mapea las 5 salas de La Voûte a sus temas cabaret exactos cuando isVoute() está activo', () => {
+  it('mapea las 6 salas de La Voûte a sus temas cabaret exactos cuando isVoute() está activo', () => {
     expect(isVoute()).toBe(false);
     setVouteMode(true);
     expect(isVoute()).toBe(true);
 
-    expect(vouteStyleOf('voute:camarin')).toBe('camarin');
-    expect(vouteStyleOf('voute:vip')).toBe('vip');
-    expect(vouteStyleOf('voute:barra')).toBe('barra');
-    expect(vouteStyleOf('voute:salon')).toBe('salon');
-    expect(vouteStyleOf('voute:cabina')).toBe('cabina');
+    for (const st of ['entrada', 'barra', 'maquillaje', 'privados', 'escenario', 'anais'] as const) {
+      expect(vouteStyleOf(`voute:${st}`)).toBe(st);
+      expect(roomTheme(7, `voute:${st}`)).toEqual(VOUTE_THEMES[st]);
+    }
+    expect(vouteStyleOf('voute:camarin')).toBeUndefined();
 
-    expect(roomTheme(1, 'voute:camarin')).toEqual(VOUTE_THEMES.camarin);
-    expect(roomTheme(2, 'voute:vip')).toEqual(VOUTE_THEMES.vip);
-    expect(roomTheme(3, 'voute:barra')).toEqual(VOUTE_THEMES.barra);
-    expect(roomTheme(4, 'voute:salon')).toEqual(VOUTE_THEMES.salon);
-    expect(roomTheme(5, 'voute:cabina')).toEqual(VOUTE_THEMES.cabina);
-
-    // En modo oficina vuelve a los temas normales.
+    // En modo oficina vuelve a los temas normales (el sorteo del upstream, sin tema propio por id).
     setVouteMode(false);
-    expect(roomTheme(1, 'voute:camarin')).not.toEqual(VOUTE_THEMES.camarin);
+    expect(roomTheme(1, 'voute:maquillaje')).toEqual(roomTheme(1));
+    expect(roomTheme(1, 'voute:maquillaje')).not.toEqual(VOUTE_THEMES.maquillaje);
   });
 
   it('reemplaza grass por asphalt (#1b1a20 / #24232b) en modo Voûte', () => {

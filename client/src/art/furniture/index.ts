@@ -33,8 +33,11 @@ export function normalizeFurniture(kind: FurnitureKind, variant?: string, state?
   return { variant: v, state: st, vseed };
 }
 
+/** Móveis que só existem em La Voûte: se desenham igual em qualquer modo (as salas de oficina nunca os usam). */
+const SO_VOUTE: readonly FurnitureKind[] = ['stanchion', 'canopy_bed', 'stage_piano'];
+
 function build(kind: FurnitureKind, variant: string | undefined, state: number, seed: number): BufFurniture {
-  if (isVoute()) {
+  if (isVoute() || SO_VOUTE.includes(kind)) {
     const swap = VOUTE_SWAP[kind];
     if (swap) return swap(variant, state, seed);
   }
@@ -131,6 +134,10 @@ function build(kind: FurnitureKind, variant: string | undefined, state: number, 
       return C.receptionDesk(seed);
     case 'bench':
       return C.bench();
+    case 'stanchion':
+    case 'canopy_bed':
+    case 'stage_piano':
+      return VOUTE_SWAP[kind](variant, state, seed); // já tratado acima; só para o tipo ser exaustivo
   }
 }
 

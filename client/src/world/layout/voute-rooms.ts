@@ -1,11 +1,12 @@
-// Layouts dedicados de las 5 salas de La Voûte (solo cuando isVoute() está activo).
+// Layouts dedicados de las 6 salas de La Voûte (solo cuando isVoute() está activo).
 // En modo normal (!isVoute()), layoutProjectRoom usa el layout de oficina estándar.
-// Cada espacio tiene su propio piso, alfombras, paredes y mobiliario para que ninguno se repita:
-//   - voute:camarin -> Boudoir de tocadores con bombillas, lavamanos de perfumes, percheros de vestuario y diván
-//   - voute:barra   -> Damero burdeos/noir, gran barra de caoba y bronce de 10 tiles, taburetes altos y mesas de cóctel
-//   - voute:salon   -> Parquet de teatro, escenario con Gran Piano de Cola Negro, telón y platea de mesas cabaret
-//   - voute:vip     -> Mármol negro y oro, cordones de terciopelo, Gran Mesa Imperial VIP, diván capitoné y sillones trono
-//   - voute:cabina  -> Losa subterránea, 3 cabinas privadas con cortina roja, 3 boxes con mamparas ahumadas y consola de luces
+// Cada espacio tiene su propio piso, alfombras, paredes y el mueble que lo nombra (Ama 11/11/2026):
+//   - voute:entrada    -> cordón VIP con postes dorados, alfombra roja, recepción y sofá de espera
+//   - voute:barra      -> gran barra de caoba y bronce, taburetes altos y mesas de cóctel
+//   - voute:maquillaje -> tocadores con espejo de bombillas, percheros de vestuario y diván
+//   - voute:privados   -> reservados con cortina de terciopelo, mamparas ahumadas y mesitas con vela
+//   - voute:escenario  -> tarima con piano de cola, telón y mesas redondas de platea
+//   - voute:anais      -> habitación de Anaïs: cama con dosel, tocador, diván y poufs
 import type { RoomTheme, WallStyle } from '../../art/api';
 import { VP, type VouteStyle } from '../../art/voute';
 import { DOOR_W, DOOR_X, TILE } from '../constants';
@@ -49,11 +50,11 @@ function addSwitch(b: AreaBuilder, north: boolean): void {
   }
 }
 
-/** 1. CAMARÍN (`voute:camarin`): Boudoir de las artistas con tocadores de bombillas, percheros de vestuario y diván. */
-function layoutVouteCamarin(room: RoomInput, theme: RoomTheme): AreaLayout {
+/** 1. SALA DE MAQUILLAJE (`voute:maquillaje`): Boudoir de las artistas con tocadores de bombillas, percheros de vestuario y diván. */
+function layoutVouteMaquillaje(room: RoomInput, theme: RoomTheme): AreaLayout {
   const { b, north } = setupShell(room, theme.wall);
   // Piso de moqueta acolchada ciruela-rosa y dos alfombras de encaje boudoir (#5a1426).
-  b.floor('carpet', 0, 0, 16, 12, room.seed, '#4a1228', '#380d1e');
+  b.floor('carpet', 0, 0, 16, 12, room.seed, '#8a3a5c', '#74304e');
   b.rug(1.4, 3.2, 6.8, 5.4, '#5a1426', room.seed);
   b.rug(9.0, 3.2, 5.6, 6.6, '#5a1426', room.seed + 1);
 
@@ -125,8 +126,8 @@ function layoutVouteBarra(room: RoomInput, theme: RoomTheme): AreaLayout {
   b.wall('shelf_wall', 3.0, undefined, { order: 0.4 });
   b.wall('shelf_wall', 5.5, undefined, { order: 0.41 });
   b.area.signId = b.wall('sign', 9.0, undefined, { order: 0.95 });
-  b.wall('window', 12.2, undefined, { order: 0.42 });
-  b.spot('window', 12, 2, 'up', { dx: 4, dy: 1 });
+  b.wall('window', 12.8, undefined, { order: 0.42 });
+  b.spot('window', 13, 2, 'up', { dx: 0, dy: 1 });
   b.wall('poster', 14.2, 'coffee', { order: 0.45 });
   addSwitch(b, north);
 
@@ -137,14 +138,15 @@ function layoutVouteBarra(room: RoomInput, theme: RoomTheme): AreaLayout {
   b.furn('counter_sink', 3, 2, undefined, { order: 0.24 });
   b.spot('sink', 3, 3, 'up', { dy: -3 });
   b.furn('counter', 4, 2, 'plain', { order: 0.25 });
-  for (const lx of [5, 6]) {
-    const m = b.furn('coffee_machine', lx, 2, undefined, { order: 0.26 });
-    b.spot('coffee', lx, 3, 'up', { dy: -3, furnitureId: m });
-  }
-  b.furn('counter', 7, 2, 'drawers', { order: 0.27 });
-  b.furn('microwave', 8, 2, undefined, { order: 0.28 });
-  const vend = b.furn('vending_machine', 10, 2, undefined, { order: 0.29 });
-  b.spot('snack', 10, 3, 'up', { dy: -3, furnitureId: vend });
+  const m = b.furn('coffee_machine', 5, 2, undefined, { order: 0.26 });
+  b.spot('coffee', 5, 3, 'up', { dy: -3, furnitureId: m });
+  // lx 6-8 queda libre: la puerta (lx 7-8) y el interruptor (lx 6) cuando la sala cae al sur del corredor.
+  const m2 = b.furn('coffee_machine', 9, 2, undefined, { order: 0.265 });
+  b.spot('coffee', 9, 3, 'up', { dy: -3, furnitureId: m2 });
+  b.furn('counter', 10, 2, 'drawers', { order: 0.27 });
+  b.furn('microwave', 11, 2, undefined, { order: 0.28 });
+  const vend = b.furn('vending_machine', 12, 2, undefined, { order: 0.29 });
+  b.spot('snack', 12, 3, 'up', { dy: -3, furnitureId: vend });
   b.furn('water_cooler', 14, 2, undefined, { order: 0.3 });
   b.spot('water', 14, 3, 'up', { dy: -3 });
 
@@ -182,8 +184,8 @@ function layoutVouteBarra(room: RoomInput, theme: RoomTheme): AreaLayout {
   return b.build();
 }
 
-/** 3. SALÓN (`voute:salon`): Le Grand Salon Burlesque con parquet oscuro, escenario con Piano de Cola y platea cabaret. */
-function layoutVouteSalon(room: RoomInput, theme: RoomTheme): AreaLayout {
+/** 5. ESCENARIO (`voute:escenario`): Le Grand Salon Burlesque con parquet, tarima con Piano de Cola y platea de mesas redondas. */
+function layoutVouteEscenario(room: RoomInput, theme: RoomTheme): AreaLayout {
   const { b, north } = setupShell(room, theme.wall);
   // Parquet oscuro de teatro (#281818) + Gran Alfombra Escénica Rubí y Oro (#6e1a30) al oeste + Alfombra de Platea al este.
   b.floor('wood', 0, 0, 16, 12, room.seed);
@@ -198,17 +200,13 @@ function layoutVouteSalon(room: RoomInput, theme: RoomTheme): AreaLayout {
   b.spot('window', 13, 2, 'up', { dx: 8, dy: 1 });
   addSwitch(b, north);
 
-  // Escenario Burlesque (oeste, lx = 1..6): Gran Piano de Cola Negro (3x2) + banqueta de pianista + candilejas + cabina de luces.
-  b.furn('pingpong_table', 2, 4, undefined, { order: 0.45 });
-  const ppY = b.py(5) + 5;
-  const ppSort = b.py(6) + SEATED_SORT_BIAS;
-  b.spot('pingpong', 1, 5, 'right', { x: b.px(2) - 6, y: ppY, group: 'pingpong:salon', sortY: ppSort });
-  b.spot('pingpong', 5, 5, 'left', { x: b.px(5) + 6, y: ppY, group: 'pingpong:salon', sortY: ppSort });
-  b.seat('desk', 'stool', 1, 4, 'right', undefined, { rank: 0, order: 0.46 });
+  // Tarima con piano de cola (oeste, lx = 1..4, ly = 3..4) y la banqueta de la pianista frente al teclado.
+  b.furn('stage_piano', 1, 3, undefined, { order: 0.45 });
+  b.seat('desk', 'stool', 3, 5, 'up', undefined, { rank: 0, order: 0.5 });
   b.furn('plant_tall', 1, 2, 'palm', { order: 0.2 });
   b.furn('floor_lamp', 6, 3, undefined, { order: 0.35 });
-  b.furn('printer', 1, 9, undefined, { order: 0.62 });
-  b.furn('filing_cabinet', 2, 9, undefined, { order: 0.63 });
+  b.furn('plant_small', 1, 9, 'flower', { order: 0.62 });
+  b.furn('floor_lamp', 2, 9, undefined, { order: 0.63 });
   b.furn('arcade', 4, 9, undefined, { order: 0.64 });
   b.spot('arcade', 4, 10, 'up', { dy: -3 });
 
@@ -238,13 +236,13 @@ function layoutVouteSalon(room: RoomInput, theme: RoomTheme): AreaLayout {
   return b.build();
 }
 
-/** 4. MESA VIP (`voute:vip`): La Loge Impériale d'Anaïs con mármol negro/oro, cordones de terciopelo y Gran Mesa Imperial. */
-function layoutVouteVip(room: RoomInput, theme: RoomTheme): AreaLayout {
+/** 0. ENTRADA (`voute:entrada`): el foyer con cordón VIP de postes dorados, alfombra roja, recepción y sofá de espera. */
+function layoutVouteEntrada(room: RoomInput, theme: RoomTheme): AreaLayout {
   const { b, north } = setupShell(room, theme.wall);
   // Piso de mármol negro con vetas doradas + Gran Alfombra Imperial de Brocado Dorado (#d4a64a).
   b.floor('marble', 0, 0, 16, 12, room.seed);
-  b.rug(2.0, 3.6, 12.0, 6.0, '#d4a64a', room.seed);
-  b.rug(DOOR_X - 0.25, north ? 9.5 : 2, DOOR_W + 0.5, 1.25, VP.crimson, room.seed + 1);
+  b.rug(2.0, 4.0, 12.0, 6.0, '#d4a64a', room.seed);
+  b.rug(DOOR_X - 0.5, north ? 7.5 : 2, DOOR_W + 1, north ? 3.5 : 3.5, '#c4193d', room.seed + 1);
 
   // Pared norte: óleos imperiales, reloj dorado y placa.
   b.wall('painting', 3.0, undefined, { order: 0.5 });
@@ -253,14 +251,12 @@ function layoutVouteVip(room: RoomInput, theme: RoomTheme): AreaLayout {
   b.wall('painting', 13.5, undefined, { order: 0.52 });
   addSwitch(b, north);
 
-  // Cordones de terciopelo / divisores de cristal y oro flanqueando la entrada VIP.
-  b.furn('glass_partition', 5, 3, 'h', { order: 0.3 });
-  b.furn('glass_partition', 6, 3, 'h', { order: 0.31 });
-  b.furn('glass_partition', 9, 3, 'h', { order: 0.32 });
-  b.furn('glass_partition', 10, 3, 'h', { order: 0.33 });
+  // Cordón VIP: dos tramos de postes dorados con cuerda de terciopelo; entre ellos queda libre la alfombra roja.
+  const cordon: Array<[number, string]> = [[3, 'l'], [4, 'h'], [5, 'h'], [6, 'r'], [9, 'l'], [10, 'h'], [11, 'h'], [12, 'r']];
+  cordon.forEach(([lx, v], i) => b.furn('stanchion', lx, 3, v, { order: 0.3 + i * 0.005 }));
 
-  // Gran Mesa Imperial VIP en el centro (3x2) con candelabro y champán + 2 mesas bajas laterales.
-  b.furn('meeting_table', 6, 5, undefined, { order: 0.48 });
+  // Recepción (3x1) al centro y dos mesas bajas laterales.
+  b.furn('reception_desk', 6, 5, undefined, { order: 0.48 });
   b.furn('coffee_table', 3, 6, undefined, { order: 0.46 });
   b.furn('coffee_table', 11, 6, undefined, { order: 0.47 });
 
@@ -298,8 +294,8 @@ function layoutVouteVip(room: RoomInput, theme: RoomTheme): AreaLayout {
   return b.build();
 }
 
-/** 5. CABINA (`voute:cabina`): Les Cabines Privées con 3 cabinas de cortina roja, 3 boxes íntimos y consola de luces. */
-function layoutVouteCabina(room: RoomInput, theme: RoomTheme): AreaLayout {
+/** 3. PRIVADOS (`voute:privados`): Les Cabines Privées con reservados de cortina de terciopelo, mamparas ahumadas y mesitas con vela. */
+function layoutVoutePrivados(room: RoomInput, theme: RoomTheme): AreaLayout {
   const { b, north } = setupShell(room, theme.wall);
   // Piso de losa oscura subterránea (#12090e) + 3 Alfombras de Terciopelo Neón Fucsia (#ff3fa4) en los 3 boxes.
   b.floor('concrete', 0, 0, 16, 12, room.seed);
@@ -358,18 +354,65 @@ function layoutVouteCabina(room: RoomInput, theme: RoomTheme): AreaLayout {
   return b.build();
 }
 
+/** 6. HABITACIÓN DE ANAÏS (`voute:anais`): cama con dosel, tocador, rincón de conversación y poufs sobre alfombra marfil. */
+function layoutVouteAnais(room: RoomInput, theme: RoomTheme): AreaLayout {
+  const { b, north } = setupShell(room, theme.wall);
+  b.floor('carpet', 0, 0, 16, 12, room.seed, '#b25f78', '#9c4f68');
+  b.rug(2.0, 4.2, 12.0, 6.0, '#e8d5c0', room.seed);
+  b.rug(9.4, 4.0, 4.6, 2.2, '#8c2240', room.seed + 1);
+
+  // Pared norte: espejo de cuerpo entero, ventana nocturna, cuadro y la placa con el nombre.
+  b.wall('mirror', 2.5, undefined, { order: 0.35 });
+  b.wall('painting', 4.6, undefined, { order: 0.5 });
+  b.area.signId = b.wall('sign', 8.0, undefined, { order: 0.95 });
+  b.wall('window', 14.2, undefined, { order: 0.4 });
+  b.spot('window', 14, 2, 'up', { dx: 8, dy: 1 });
+  addSwitch(b, north);
+
+  // La cama con dosel al este, con sus dos lámparas de noche.
+  b.furn('canopy_bed', 10, 2, undefined, { order: 0.4 });
+  b.furn('floor_lamp', 9, 2, undefined, { order: 0.3 });
+  b.furn('floor_lamp', 13, 2, undefined, { order: 0.31 });
+  b.spot('stand', 11, 4, 'up', { dy: -2 });
+
+  // Tocador con espejo de bombillas al oeste.
+  const vanity = b.furn('desk', 2, 2, 'vanity', { order: 0.38, seat: 'S0' });
+  b.seat('desk', 'office_chair', 2, 3, 'up', 'velvet', { dx: TILE / 2, deskId: vanity, rank: 0, side: 'S', order: 0.55 });
+  b.furn('plant_small', 4, 2, 'flower', { order: 0.4 });
+
+  // Rincón de conversación: dos butacas frente a la mesita y el diván capitoné al sur.
+  b.furn('coffee_table', 5, 6, undefined, { order: 0.52 });
+  b.seat('desk', 'armchair', 4, 6, 'right', 'right', { rank: 1, order: 0.53 });
+  b.seat('desk', 'armchair', 7, 6, 'left', 'left', { rank: 2, order: 0.54 });
+  const sofa = b.furn('sofa', 5, 8, 'up', { order: 0.62 });
+  b.seat('desk', 'sofa', 5, 8, 'up', 'up', { noFurniture: true, furnitureId: sofa, rank: 3 });
+  b.seat('desk', 'sofa', 6, 8, 'up', 'up', { noFurniture: true, furnitureId: sofa, rank: 4 });
+  b.seat('desk', 'sofa', 7, 8, 'up', 'up', { noFurniture: true, furnitureId: sofa, rank: 5 });
+
+  // Poufs de terciopelo y plantas.
+  b.seat('nook', 'beanbag', 13, 8, 'left', 'red', { order: 0.66 });
+  b.seat('nook', 'beanbag', 2, 9, 'up', 'yellow', { order: 0.65 });
+  b.furn('plant_tall', 1, 10, 'monstera', { order: 0.7 });
+  b.furn('plant_tall', 14, 10, 'palm', { order: 0.71 });
+
+  b.spot('stand', 9, 6, 'right');
+  b.spot('stand', 10, 8, 'up', { dy: -2 });
+  return b.build();
+}
+
 export function layoutVouteRoom(style: VouteStyle, room: RoomInput, theme: RoomTheme): AreaLayout {
   switch (style) {
-    case 'camarin':
-      return layoutVouteCamarin(room, theme);
+    case 'entrada':
+      return layoutVouteEntrada(room, theme);
     case 'barra':
       return layoutVouteBarra(room, theme);
-    case 'salon':
-    default:
-      return layoutVouteSalon(room, theme);
-    case 'vip':
-      return layoutVouteVip(room, theme);
-    case 'cabina':
-      return layoutVouteCabina(room, theme);
+    case 'maquillaje':
+      return layoutVouteMaquillaje(room, theme);
+    case 'privados':
+      return layoutVoutePrivados(room, theme);
+    case 'escenario':
+      return layoutVouteEscenario(room, theme);
+    case 'anais':
+      return layoutVouteAnais(room, theme);
   }
 }

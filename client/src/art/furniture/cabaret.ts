@@ -1029,6 +1029,113 @@ function vouteBench(): BufFurniture {
   return { base: s };
 }
 
+// 47. stanchion (1x1): Poste de latón dorado con base y bola, cuerda de terciopelo carmesí hacia los lados (cordón VIP).
+function vouteStanchion(variant?: string): BufFurniture {
+  const s = floorSheet(1, 1, 10);
+  const b = s.buf;
+  const left = variant !== 'l';
+  const right = variant !== 'r';
+  // Cuerda: cae en catenaria entre postes vecinos (llega hasta el borde del tile)
+  const rope = (x0: number, x1: number) => {
+    b.hline(x0, x1, -3, VP.b5);
+    b.hline(x0, x1, -2, VP.b7);
+    b.set(Math.round((x0 + x1) / 2), -1, VP.b7);
+  };
+  if (left) rope(0, 6);
+  if (right) rope(9, 15);
+  // Poste: base de disco, fuste y bola con brillo
+  b.ellipse(7.5, 13, 5, 2, GOLD.dk);
+  b.ellipse(7.5, 12, 4.5, 1.7, GOLD.base);
+  b.vline(7, -5, 11, GOLD.base);
+  b.vline(8, -5, 11, GOLD.dk);
+  b.vline(6, -3, 10, GOLD.hi);
+  b.ellipse(7.5, -7, 2.5, 2.5, GOLD.base);
+  b.set(6, -8, VP.ol);
+  b.outline();
+  contact(b, 2, 13, 12, 3, 0.2);
+  return { base: s };
+}
+
+// 48. canopy_bed (3x2): Cama con dosel de terciopelo, cuatro postes dorados, cortinas rosas y cobertor carmesí.
+function vouteCanopyBed(): BufFurniture {
+  const s = floorSheet(3, 2, 28);
+  const b = s.buf;
+  const SHEET = ramp('#f3e6d0', 0.05);
+  const PINK = ramp('#c9577f', 0.07);
+  // Cabecera tallada y marco de la cama
+  frontFace(b, 2, -4, 44, 12, MAHOGANY);
+  b.hline(2, 45, -4, VP.or);
+  for (const x of [6, 14, 22, 30, 38]) b.vline(x, -2, 6, MAHOGANY.dd);
+  // Colchón con sábana crema, almohadas y cobertor carmesí con ribete dorado
+  topFace(b, 3, 7, 42, 14, SHEET);
+  b.ellipse(14, 11, 7, 3, PINK.lt);
+  b.ellipse(34, 11, 7, 3, PINK.lt);
+  b.hline(9, 19, 10, PINK.hi);
+  b.hline(29, 39, 10, PINK.hi);
+  frontFace(b, 3, 15, 42, 8, VELVET);
+  b.hline(3, 44, 15, VP.or);
+  b.hline(3, 44, 17, VELVET.hi);
+  b.vline(24, 18, 22, VELVET.dk);
+  frontFace(b, 2, 23, 44, 5, MAHOGANY);
+  b.hline(2, 45, 23, VP.or);
+  // Dosel: faldón superior, cortinas recogidas a los lados y cuatro postes dorados
+  b.rect(0, -26, 48, 4, VELVET.dk);
+  b.hline(0, 47, -26, VP.or);
+  b.hline(0, 47, -22, VP.or);
+  for (let x = 3; x < 46; x += 6) b.set(x, -21, VP.ol);
+  b.rect(3, -21, 7, 17, PINK.base);
+  b.rect(38, -21, 7, 17, PINK.base);
+  for (const x of [5, 7, 40, 42]) b.vline(x, -20, -6, PINK.dk);
+  for (const x of [0, 45]) {
+    b.rect(x, -26, 3, 53, GOLD.base);
+    b.vline(x, -26, 26, GOLD.hi);
+    b.vline(x + 2, -26, 26, GOLD.dk);
+    b.rect(x, -28, 3, 2, VP.ol);
+  }
+  b.outline();
+  contact(b, 0, 26, 48, 5, 0.22);
+  return { base: s };
+}
+
+// 49. stage_piano (4x2): Tarima de escenario con candilejas doradas, piano de cola negro y candelabro.
+function vouteStagePiano(): BufFurniture {
+  const s = floorSheet(4, 2, 26);
+  const b = s.buf;
+  const BOARDS = ramp('#6b3a24', 0.07);
+  // Tarima de tablones con frente dorado y candilejas encendidas
+  topFace(b, 0, 8, 64, 16, BOARDS);
+  for (let x = 4; x < 64; x += 8) b.vline(x, 9, 22, BOARDS.dk);
+  frontFace(b, 0, 24, 64, 5, VELVET);
+  b.hline(0, 63, 24, VP.or);
+  b.hline(0, 63, 28, GOLD.dk);
+  for (let x = 3; x < 62; x += 6) {
+    b.set(x, 26, VP.ol);
+    b.set(x + 1, 26, VP.ol);
+  }
+  // Piano de cola sobre la tarima: tapa abierta, caja, teclado de marfil y patas
+  b.rect(10, -8, 36, 6, '#0d0a0c');
+  b.rect(12, -7, 32, 4, VP.b5);
+  b.line(44, -3, 50, -14, VP.or);
+  b.rect(8, -2, 40, 16, '#0d0a0c');
+  b.rect(9, -1, 38, 13, '#1e1619');
+  b.rect(46, 0, 8, 11, '#0d0a0c');
+  b.rect(47, 1, 6, 9, '#1e1619');
+  b.hline(8, 47, 14, VP.or);
+  b.rect(11, 9, 30, 4, '#f3e6d0');
+  for (let kx = 12; kx < 40; kx += 2) if (kx % 6 !== 0) b.rect(kx, 9, 1, 2, '#0d0a0c');
+  for (const x of [10, 28, 50]) b.rect(x, 14, 3, 8, '#0d0a0c');
+  b.rect(27, 20, 5, 2, VP.or);
+  // Candelabro dorado con tres velas sobre la cola
+  b.rect(49, -1, 5, 2, VP.or);
+  for (const cx of [49, 51, 53]) {
+    b.vline(cx, -5, -2, '#f3e6d0');
+    b.set(cx, -6, VP.ol);
+  }
+  b.outline();
+  contact(b, 0, 27, 64, 4, 0.22);
+  return { base: s };
+}
+
 export const VOUTE_SWAP: Readonly<Record<FurnitureKind, SwapFn>> = {
   desk: (v, _s, seed) => vouteDesk(v, seed),
   desk_back: (v, _s, seed) => vouteDeskBack(v, seed),
@@ -1076,4 +1183,7 @@ export const VOUTE_SWAP: Readonly<Record<FurnitureKind, SwapFn>> = {
   sink: () => vouteSink(),
   reception_desk: () => vouteReceptionDesk(),
   bench: () => vouteBench(),
+  stanchion: (v) => vouteStanchion(v),
+  canopy_bed: () => vouteCanopyBed(),
+  stage_piano: () => vouteStagePiano(),
 };

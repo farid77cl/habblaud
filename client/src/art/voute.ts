@@ -37,9 +37,10 @@ export const VP = {
   corridorFloor: '#12090e',
 } as const;
 
-/** Estilo de cada sala de La Voûte (por id de sala), para que no sean clones de la oficina. */
-export type VouteStyle = 'camarin' | 'vip' | 'barra' | 'cabina' | 'salon';
+/** Estilo de cada una de las seis salas de La Voûte (por id de sala), para que no sean clones de la oficina. */
+export const VOUTE_STYLES = ['entrada', 'barra', 'maquillaje', 'privados', 'escenario', 'anais'] as const;
+export type VouteStyle = (typeof VOUTE_STYLES)[number];
 export function vouteStyleOf(areaId: string | undefined): VouteStyle | undefined {
-  const m = /^voute:(camarin|vip|barra|cabina|salon)$/.exec(areaId ?? '');
-  return m ? (m[1] as VouteStyle) : undefined;
+  const m = /^voute:([a-z]+)$/.exec(areaId ?? '');
+  return m && (VOUTE_STYLES as readonly string[]).includes(m[1]) ? (m[1] as VouteStyle) : undefined;
 }

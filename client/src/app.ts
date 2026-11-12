@@ -8,8 +8,9 @@ import type { CitySceneHost } from './ui/world/scene-switch';
 import type { CityScene } from './world/city';
 import { migrateLegacyKeys, safeLocalStorage } from './ui/prefs';
 import { setVouteMode } from './art/voute';
-import { aplicarVoute, leerVoute } from './net/voute-estado';
+import { aplicarVoute, crearExtra, guardarExtras, leerEleRuta, leerExtras, leerVoute } from './net/voute-estado';
 import { montarBotonVoute } from './ui/voute';
+import { montarBotonAgregar } from './ui/voute-agregar';
 import { getLocale, tr } from '../../shared/i18n';
 
 export function start(): void {
@@ -33,12 +34,30 @@ export function start(): void {
   const city = cityHost({ world, worldCanvas, uiRoot, mock: store.mock, params, version: () => store.liveSnapshot?.meta.version ?? '' });
   createUI(uiRoot, store, world, city);
   let mounted = false;
+  // La Voûte vive solo en esta vista: las seis salas y las residentes se suman al snapshot en el navegador, con el
+  // modo normal o con el cabaret. El servidor (y el World) nunca las ven.
+  let extras = leerExtras(storage);
+  let vouteOn = leerVoute(storage);
+  const eleRuta = leerEleRuta(storage);
+  const vista = () => store.setView((s) => aplicarVoute(s, vouteOn, { extras, eleRuta }));
+  vista();
+  montarBotonAgregar(uiRoot, {
+    onAdd: (nombre, sala) => {
+      const e = crearExtra(nombre, sala, extras);
+      if (!e) return false;
+      extras = [...extras, e];
+      guardarExtras(storage, extras);
+      vista();
+      return true;
+    },
+  });
   montarBotonVoute(
     uiRoot,
     storage,
     (on) => {
       setVouteMode(on);
-      store.setView(on ? (s) => aplicarVoute(s, true) : null);
+      vouteOn = on;
+      vista();
       if (mounted) world.rebuild?.();
     },
     { canvas: worldCanvas },

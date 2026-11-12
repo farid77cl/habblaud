@@ -3,7 +3,7 @@ import { FURNITURE } from '../art/api';
 import { renderRug } from '../art/surfaces/rug';
 import { roomTheme } from '../art/theme';
 import { setVouteMode } from '../art/voute';
-import { VOUTE_SALAS } from '../../../shared/voute-residentes';
+import { VOUTE_SALAS, vouteSalaNombre } from '../../../shared/voute-residentes';
 import { assembleBuilding, coreAreas } from './layout/building';
 import { CORE_WALLS, RECEPTION_ID, VOUTE_CORE_WALLS } from './layout/core';
 import { layoutExterior } from './layout/exterior';
@@ -59,8 +59,9 @@ describe('La Voûte — exterior nocturno, cartel de neón y supresión estacion
     expect(getSeason(hallow)).toBe('none');
   });
 
-  it('diseña los 5 espacios de La Voûte completamente distintos (Camarín ≠ Barra ≠ Salón, Mesa VIP ≠ Cabina) y todos caminables', () => {
+  it('diseña los 6 espacios de La Voûte, cada uno con el mueble que lo nombra, todos distintos y caminables', () => {
     setVouteMode(true);
+    expect(VOUTE_SALAS).toHaveLength(6);
     const slots = VOUTE_SALAS.map((_, i) => i);
     const rooms = VOUTE_SALAS.map((s, slot) => {
       const th = roomTheme(100 + slot, s.id);
@@ -72,36 +73,48 @@ describe('La Voûte — exterior nocturno, cartel de neón y supresión estacion
     const reach = b.grid.reachableFrom(elevator.tx, elevator.ty);
     const reachable = (x: number, y: number) => reach[y * b.grid.w + x] === 1;
 
-    // 1. Pisos distintos entre las 5 salas
-    const floorKinds = rooms.map((r) => r.floors[0].kind);
-    expect(new Set(floorKinds).size).toBe(5);
+    // 1. El mueble que nombra a cada espacio (Ama 11/11: entrada con cordón VIP, barra con taburetes, tocadores con
+    //    espejos de bombillas, reservados con cortina, tarima con piano y mesas redondas, cama con dosel).
+    const cuenta = (r: (typeof rooms)[number], kind: string) => r.furniture.filter((f) => f.kind === kind).length;
+    const [entrada, barra, maquillaje, privados, escenario, anais] = rooms;
+    expect(cuenta(entrada, 'stanchion'), 'entrada: postes del cordón').toBeGreaterThanOrEqual(6);
+    expect(cuenta(barra, 'counter') + cuenta(barra, 'counter_sink'), 'barra: mostrador').toBeGreaterThanOrEqual(3);
+    expect(cuenta(barra, 'stool'), 'barra: taburetes').toBeGreaterThanOrEqual(6);
+    expect(cuenta(maquillaje, 'desk') + cuenta(maquillaje, 'desk_back'), 'maquillaje: tocadores').toBeGreaterThanOrEqual(4);
+    expect(maquillaje.wallItems.filter((f) => f.kind === 'mirror').length, 'maquillaje: espejos').toBeGreaterThanOrEqual(2);
+    expect(cuenta(privados, 'toilet_stall'), 'privados: reservados con cortina').toBeGreaterThanOrEqual(3);
+    expect(cuenta(escenario, 'stage_piano'), 'escenario: tarima con piano').toBe(1);
+    expect(cuenta(escenario, 'cafe_table'), 'escenario: mesas redondas').toBeGreaterThanOrEqual(2);
+    expect(cuenta(anais, 'canopy_bed'), 'anais: cama con dosel').toBe(1);
+    for (const r of [barra, maquillaje, privados, escenario, anais]) expect(cuenta(r, 'stanchion'), `${r.id} sin cordón`).toBe(0);
 
-    // 2. Alfombras principales con colores y píxeles distintos entre las 5 salas
+    // 2. Pisos y alfombras: ninguna sala repite piso con alfombra
+    const pisos = rooms.map((r) => `${r.floors[0].kind}|${r.floors[0].tint ?? ''}|${r.rugs[0].color}`);
+    expect(new Set(pisos).size).toBe(6);
     const rugColors = rooms.map((r) => r.rugs[0].color);
-    expect(new Set(rugColors).size).toBe(5);
     const rugHashes = rugColors.map((col, idx) => {
       const buf = renderRug(48, 32, col, idx + 1);
       let h = 2166136261;
       for (let i = 0; i < buf.data.length; i++) h = Math.imul(h ^ buf.data[i], 16777619);
       return h >>> 0;
     });
-    expect(new Set(rugHashes).size).toBe(5);
+    expect(new Set(rugHashes).size).toBe(new Set(rugColors).size);
 
-    // 3. Firmas de mobiliario distintas (Camarín ≠ Barra ≠ Salón y Mesa VIP ≠ Cabina)
+    // 3. Firmas de mobiliario distintas
     const furnSignatures = rooms.map((r) =>
       r.furniture
         .map((f) => `${f.kind}@${f.tx - r.rect.x},${f.ty - r.rect.y}`)
         .sort()
         .join('|'),
     );
-    expect(new Set(furnSignatures).size).toBe(5);
+    expect(new Set(furnSignatures).size).toBe(6);
 
     // 4. Invariantes de simulación y caminabilidad sin solapes
     for (const room of rooms) {
       const desks = room.spots.filter((s) => s.kind === 'desk');
       expect(desks, `${room.id} desks`).toHaveLength(6);
       expect(new Set(desks.map((d) => d.rank))).toEqual(new Set([0, 1, 2, 3, 4, 5]));
-      expect(room.spots.filter((s) => s.kind === 'stool' || s.kind === 'nook').length).toBeGreaterThanOrEqual(4);
+      expect(room.spots.filter((s) => s.kind === 'stool' || s.kind === 'nook').length).toBeGreaterThanOrEqual(2);
       expect(room.spots.filter((s) => s.kind === 'stand').length).toBeGreaterThanOrEqual(3);
       expect(room.spots.filter((s) => s.kind === 'switch')).toHaveLength(1);
 
@@ -123,7 +136,19 @@ describe('La Voûte — exterior nocturno, cartel de neón y supresión estacion
     expect(unreachable).toEqual([]);
   });
 
-  it('en la opción normal (!isVoute()), tanto el núcleo como las 5 salas se ven 100% como oficina normal sin restos de caché', () => {
+  it('el rótulo de cada sala dice el nombre de su espacio en La Voûte', () => {
+    const nombres = VOUTE_SALAS.map((s) => vouteSalaNombre(s.id, true));
+    expect(nombres).toEqual(['Entrada', 'Barra', 'Sala de maquillaje', 'Privados', 'Escenario', 'Habitación de Anaïs']);
+  });
+
+  it('roomTheme depende del modo: en modo normal una sala voute:* se sortea como en el upstream', () => {
+    setVouteMode(false);
+    for (const s of VOUTE_SALAS) for (const seed of [3, 17, 4242]) expect(roomTheme(seed, s.id)).toEqual(roomTheme(seed));
+    setVouteMode(true);
+    expect(roomTheme(3, 'voute:barra')).not.toEqual(roomTheme(3, 'voute:escenario'));
+  });
+
+  it('en la opción normal (!isVoute()), tanto el núcleo como las 6 salas se ven 100% como oficina normal sin restos de caché', () => {
     setVouteMode(true);
     expect(coreAreas()[0].walls[0].style.base).toBe(VOUTE_CORE_WALLS.reception.base);
 

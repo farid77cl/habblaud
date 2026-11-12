@@ -189,7 +189,11 @@ export type FurnitureKind =
   | 'sink' // 1x1 pia com gabinete (encostada na parede norte; use 'mirror' na parede acima).
   // --- recepção
   | 'reception_desk' // 3x1 balcão de recepção.
-  | 'bench'; // 2x1 banco de espera (assento, olhando para baixo).
+  | 'bench' // 2x1 banco de espera (assento, olhando para baixo).
+  // --- La Voûte (só desenhados no modo cabaret; as salas de oficina nunca os usam)
+  | 'stanchion' // 1x1 poste dourado do cordão VIP. variants: 'h' (corda dos dois lados) | 'l' (corda só à direita) | 'r' (corda só à esquerda)
+  | 'canopy_bed' // 3x2 cama com dossel (quarto da Anaïs).
+  | 'stage_piano'; // 4x2 palco (tablado) com piano de cauda.
 
 export interface FurnitureDef {
   mount: 'floor' | 'wall';
@@ -263,6 +267,9 @@ export const FURNITURE: Readonly<Record<FurnitureKind, FurnitureDef>> = {
   sink: { mount: 'floor', footprint: { w: 1, h: 1 }, blocks: true },
   reception_desk: { mount: 'floor', footprint: { w: 3, h: 1 }, blocks: true },
   bench: { mount: 'floor', footprint: { w: 2, h: 1 }, blocks: false, seat: true },
+  stanchion: { mount: 'floor', footprint: { w: 1, h: 1 }, blocks: true, variants: ['h', 'l', 'r'] },
+  canopy_bed: { mount: 'floor', footprint: { w: 3, h: 2 }, blocks: true },
+  stage_piano: { mount: 'floor', footprint: { w: 4, h: 2 }, blocks: true },
 };
 
 export type FloorKind =

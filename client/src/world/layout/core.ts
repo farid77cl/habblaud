@@ -1,6 +1,6 @@
 // Núcleo do prédio (colunas 0 e 1): recepção com elevadores, banheiros, copa e lounge.
 import type { WallStyle } from '../../art/api';
-import { VOUTE_THEMES } from '../../art/theme';
+import { VOUTE_CORE_THEMES, VOUTE_THEMES } from '../../art/theme';
 import { VP, isVoute } from '../../art/voute';
 import { COL_W, NORTH_Y, ROOM_H, SOUTH_Y, TILE } from '../constants';
 import { AreaBuilder, SEATED_SORT_BIAS } from './builder';
@@ -22,11 +22,11 @@ export const CORE_WALLS = {
 };
 
 export const VOUTE_CORE_WALLS = {
-  reception: VOUTE_THEMES.vestibulo.wall,
-  restroom: VOUTE_THEMES.camerinos.wall,
+  reception: VOUTE_CORE_THEMES.vestibulo.wall,
+  restroom: VOUTE_CORE_THEMES.camerinos.wall,
   cafe: VOUTE_THEMES.barra.wall,
   cafeSplash: { base: '#2a0a12', trim: '#d4a64a', pattern: 'marble' } satisfies WallStyle,
-  lounge: VOUTE_THEMES.salon.wall,
+  lounge: VOUTE_CORE_THEMES.salon.wall,
   glass: { base: '#3a0f1e', trim: '#d4a64a', pattern: 'glass' } satisfies WallStyle,
 };
 

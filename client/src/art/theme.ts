@@ -1,7 +1,7 @@
 // Temas de sala (puros): paletas claras e bem distintas. Sementes consecutivas (slots vizinhos)
 // recebem temas diferentes; a ordem da lista alterna famílias de cor de propósito.
 import type { RoomTheme } from './api';
-import { isVoute } from './voute';
+import { isVoute, vouteStyleOf, type VouteStyle } from './voute';
 
 const THEMES: readonly RoomTheme[] = [
   { carpet: '#c9d1dc', carpet2: '#bdc6d3', wall: { base: '#eef1f4', trim: '#9fb0c4', pattern: 'plain' }, accent: '#3f7fd8', deskVariant: 'white', chairVariant: 'blue' },
@@ -20,34 +20,36 @@ const V = (carpet: string, carpet2: string, base: string, trim: string, pattern:
   carpet, carpet2, wall: { base, trim, pattern }, accent, deskVariant: 'vanity', chairVariant: 'velvet',
 });
 
-const VOUTE_LIST: readonly RoomTheme[] = [
-  V('#5a1426', '#6e1a30', '#1e1619', '#d4a64a', 'stripes', '#ffe08a'), // 0: camarín de tocadores
-  V('#2a0a12', '#5a1426', '#0d0a0c', '#d4a64a', 'wood_panel', '#d4a64a'), // 1: reservado VIP
-  V('#1e1619', '#2a0a12', '#0d0a0c', '#ff3fa4', 'brick', '#ff3fa4'), // 2: barra
-  V('#6e1a30', '#8c2240', '#1e1619', '#d4a64a', 'stripes', '#ff3fa4'), // 3: salón de sofás
-  V('#5a1426', '#2a0a12', '#0d0a0c', '#d4a64a', 'plain', '#ffe08a'), // 4: vestíbulo con telón
-  V('#2a0a12', '#1e1619', '#1e1619', '#ff8fcf', 'plain', '#ff8fcf'), // 5: camerinos privados
-  V('#5a1426', '#8c2240', '#0d0a0c', '#ff3fa4', 'stripes', '#ff3fa4'), // 6: La Voûte (cabina)
-];
+/**
+ * Superficies cabaret de cada una de las seis salas (spec Barbie 11/11/2026 + revisión), solo con el modo La Voûte.
+ * Cada sala tiene su propia familia de color y paredes más claras que el piso, para que muebles y agentes contrasten.
+ */
+export const VOUTE_THEMES: Readonly<Record<VouteStyle, RoomTheme>> = {
+  entrada: V('#7a1d36', '#8f2644', '#3a1a28', '#d4a64a', 'plain', '#ffe08a'), // mármol negro y oro, alfombra roja
+  barra: V('#3b1d2b', '#2a1420', '#2f1520', '#ff3fa4', 'brick', '#ff3fa4'), // damero y latón con neón rosa
+  maquillaje: V('#8a3a5c', '#74304e', '#4a2236', '#ffe08a', 'stripes', '#ffe08a'), // boudoir ciruela-rosa, bombillas
+  privados: V('#3d2a5e', '#2f1f4a', '#2b1d3a', '#ff8fcf', 'plain', '#ff8fcf'), // losa violeta, cortinas
+  escenario: V('#8c3a2a', '#74301f', '#40201a', '#d4a64a', 'wood_panel', '#ffe08a'), // parquet cálido, telón
+  anais: V('#b25f78', '#9c4f68', '#5a3040', '#f3e6d0', 'plain', '#f3e6d0'), // habitación rosa empolvado y marfil
+};
 
-/** Superficies cabaret por sala (spec Barbie 11/11/2026), reemplazan a THEMES con el modo Voûte. */
-export const VOUTE_THEMES = Object.assign(VOUTE_LIST, {
-  camarin: VOUTE_LIST[0],
-  vip: VOUTE_LIST[1],
-  barra: VOUTE_LIST[2],
-  salon: VOUTE_LIST[3],
-  vestibulo: VOUTE_LIST[4],
-  camerinos: VOUTE_LIST[5],
-  cabina: VOUTE_LIST[6],
-});
-const VOUTE_ROOM: Readonly<Record<string, number>> = { 'voute:camarin': 0, 'voute:vip': 1, 'voute:barra': 2, 'voute:salon': 3, 'voute:cabina': 6 };
+/** Paredes de las salas comunes (vestíbulo, camerinos, foyer) con La Voûte; no son salas de agentes. */
+export const VOUTE_CORE_THEMES = {
+  vestibulo: V('#7a1d36', '#5a1426', '#3a1a28', '#d4a64a', 'plain', '#ffe08a'),
+  camerinos: V('#2a0a12', '#1e1619', '#2d1a30', '#ff8fcf', 'plain', '#ff8fcf'),
+  salon: V('#6e1a30', '#8c2240', '#3a1c26', '#d4a64a', 'stripes', '#ff3fa4'),
+} as const;
 
 export const THEME_COUNT = THEMES.length;
 
 export function roomTheme(seed: number, id?: string): RoomTheme {
-  const list = isVoute() ? VOUTE_THEMES : THEMES;
-  const n = list.length;
-  const fixed = id !== undefined ? VOUTE_ROOM[id] : undefined;
-  const t = list[fixed ?? ((Math.floor(seed) % n) + n) % n];
+  // Solo con La Voûte encendida una sala voute:* tiene tema propio; en modo normal se sortea como en el upstream.
+  const style = isVoute() ? vouteStyleOf(id) : undefined;
+  if (style) {
+    const v = VOUTE_THEMES[style];
+    return { ...v, wall: { ...v.wall } };
+  }
+  const n = THEMES.length;
+  const t = THEMES[((Math.floor(seed) % n) + n) % n];
   return { ...t, wall: { ...t.wall } };
 }
