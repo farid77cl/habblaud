@@ -47,6 +47,18 @@ describe('La Voûte — exterior nocturno, cartel de neón y supresión estacion
     }
   });
 
+  it('el letrero de neón mide al menos 3 veces el original (64x24) y deja de pisar la fachada', () => {
+    setVouteMode(true);
+    const sp = propSprite('neon_sign');
+    expect(sp.canvas.width).toBeGreaterThanOrEqual(64 * 3);
+    expect(sp.canvas.height).toBeGreaterThanOrEqual(24 * 3);
+    const ext = layoutExterior(5);
+    const signs = ext.props.filter((p) => p.kind === 'neon_sign');
+    expect(signs.length).toBeGreaterThanOrEqual(2);
+    // el de la entrada queda en el lote de la izquierda (no sobre el primer módulo)
+    expect(Math.min(...signs.map((p) => p.x))).toBeLessThan(0);
+  });
+
   it('suprime temporadas (Halloween / Navidad) cuando isVoute() está activo', () => {
     const xmas = new Date(2026, 11, 24, 21, 0, 0);
     const hallow = new Date(2026, 9, 31, 21, 0, 0);

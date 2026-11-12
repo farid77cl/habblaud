@@ -41,8 +41,8 @@ export const VOUTE_AMBIENT: Ambient = {
   night: 1,
   warm: 0,
   outside: [58, 26, 58],
-  inside: [255, 224, 138],
-  dim: [140, 34, 64],
+  inside: [255, 238, 196],
+  dim: [160, 52, 84],
 };
 
 /** Flicker sutil de 120ms a cada 6000ms para o letreiro de néon de La Voûte. */
@@ -411,7 +411,7 @@ export class Lighting {
         m.fillRect(p.x, p.y, p.w, p.h);
       }
       // à noite, o centro das salas acesas fica mais claro que os cantos (luz do teto)
-      const glow = (vis.room ? l.lit : this.presenceLit(vis) ? l.lit : vis.layout.kind === 'corridor' ? 0 : 1) * l.cover * n;
+      const glow = (vis.room ? l.lit : this.presenceLit(vis) ? l.lit : vis.layout.kind === 'corridor' ? 0 : 1) * l.cover * n * (isVoute() ? 0.45 : 1);
       if (glow > 0.05) {
         const r = shade ?? p;
         m.globalCompositeOperation = 'multiply';
@@ -457,7 +457,7 @@ export class Lighting {
         halo(street, prop.x, prop.y + 6, 120, 84, k);
         halo(street, prop.x, prop.y - 30, 30, 24, 0.7 * k);
       } else if (prop.kind === 'totem') halo(cool, prop.x, prop.y - 4, 34, 22, 0.6 * k);
-      else if (prop.kind === 'neon_sign') halo(arcade, prop.x, prop.y - 12, 144, 92, k);
+      else if (prop.kind === 'neon_sign') halo(arcade, prop.x, prop.y - 36, 440, 250, k);
       else if (prop.kind === 'velvet_rope') halo(cool, prop.x, prop.y, 44, 28, 0.55 * k);
     }
     this.paintWindowSpill(scene, lit, k, halo, street);
@@ -582,13 +582,13 @@ export class Lighting {
     if (!voute) this.drawSunbeams(ctx, scene, view);
     if (n > 0.2) {
       for (const prop of scene.exterior.props) {
-        if (!inView(prop.x, prop.y, 72)) continue;
+        if (!inView(prop.x, prop.y, 130)) continue;
         if (prop.kind === 'lamp') {
           ctx.globalAlpha = 0.6 * n;
           ctx.drawImage(warm, Math.round(prop.x - 14), Math.round(prop.y - 43), 28, 28);
         } else if (prop.kind === 'neon_sign') {
           ctx.globalAlpha = 0.75 * n * cabaretNeonAlpha(now, this.reduced);
-          ctx.drawImage(cool, Math.round(prop.x - 36), Math.round(prop.y - 44), 72, 56);
+          ctx.drawImage(cool, Math.round(prop.x - 110), Math.round(prop.y - 120), 220, 168);
         } else if (prop.kind === 'velvet_rope') {
           ctx.globalAlpha = 0.32 * n;
           ctx.drawImage(gold, Math.round(prop.x - 14), Math.round(prop.y - 18), 28, 28);

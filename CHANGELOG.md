@@ -10,6 +10,25 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Adicionado
+
+- **La Voûte (fork): residentes em seis salas e o modo cabaré.** As agentes da casa ficam em repouso no escritório,
+  repartidas por ofício em seis salas, e o botão **LV** (pequeno e discreto, na barra de cima) transforma as seis em
+  entrada com cordão VIP, bar com banquetas, sala de maquiagem com penteadeiras de lâmpadas, privados com cortina, palco
+  com piano e mesas redondas e o quarto da Anaïs com cama de dossel, cada uma com o seu letreiro. Por fora, a noite
+  com um letreiro de néon grande e com halo, e uma rua de tom diferente do gramado. Sem nudez.
+- **Botão «+ Agente»:** adiciona uma residente com nome e ofício, que cai na sala do seu ofício e fica lembrada neste
+  navegador.
+
+### Alterado
+
+- **Os dados verdadeiros do Habblaud World não mudam:** as residentes e as salas de La Voûte (`voute:*`) existem só na
+  vista do navegador. O servidor não as conhece, e a projeção, o histórico e a linha do tempo as ignoram (`isDemoId`
+  passou a cobrir `voute:`), então nada disso chega ao World.
+- **Ele (a principal do projeto LaVouteDAnais) agora é reconhecida pelo trecho `LaVouteDAnais` do caminho da pasta** ou
+  por um caminho escolhido (`localStorage` `habblaud:voute-ele`), e não só pelo nome da última pasta. O nome e o visual
+  são aplicados numa cópia, na vista.
+
 ## [1.0.3] - 2026-10-16
 
 ### Corrigido

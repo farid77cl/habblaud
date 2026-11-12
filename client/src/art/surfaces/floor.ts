@@ -107,8 +107,8 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
       break;
     }
     case 'tile_check': {
-      const a = voute ? '#2a0a12' : '#f2ede4';
-      const c = voute ? '#16090e' : '#d2d8de';
+      const a = voute ? '#6a2540' : '#f2ede4';
+      const c = voute ? '#401627' : '#d2d8de';
       for (let qy = 0; qy < 2; qy++) {
         for (let qx = 0; qx < 2; qx++) {
           const col = (qx + qy + tx + ty) % 2 ? c : a;
@@ -177,9 +177,10 @@ function paintTile(b: PixelBuf, kind: FloorKind, tx: number, ty: number, o: Floo
     }
     case 'street': {
       if (voute) {
-        b.rect(0, 0, TILE, TILE, VP.as1);
+        // La calle es más clara que el lote nocturno que la rodea (que no se funda en un solo negro).
+        b.rect(0, 0, TILE, TILE, '#3a3748');
         for (let i = 0; i < 16; i++) {
-          b.set(Math.floor(r(i) * TILE), Math.floor(r(i + 30) * TILE), VP.as2);
+          b.set(Math.floor(r(i) * TILE), Math.floor(r(i + 30) * TILE), r(i + 60) < 0.5 ? '#454256' : '#302d3d');
         }
         break;
       }
@@ -206,7 +207,7 @@ const WOOD: readonly (readonly RGBA[])[] = WOOD_TONES.map((t) =>
   [t, shade(t, 0.03), shade(t, -0.075), shade(t, -0.03), shade(t, -0.1), shade(t, 0.03), shade(t, -0.12)].map(rgba),
 );
 
-const VOUTE_WOOD_TONES = ['#281818', '#2e1c1c', '#241414', '#321e1e'] as const;
+const VOUTE_WOOD_TONES = ['#5c3626', '#64402e', '#54301f', '#6c4634'] as const;
 const VOUTE_WOOD: readonly (readonly RGBA[])[] = VOUTE_WOOD_TONES.map((t) =>
   [t, shade(t, 0.03), shade(t, -0.05), shade(t, -0.025), shade(t, -0.07), shade(t, 0.03), shade(t, -0.08)].map(rgba),
 );
@@ -243,10 +244,10 @@ const CONCRETE_EDGE: readonly RGBA[] = CONCRETE.map((c) => rgba(shade(`rgb(${c[0
 const CONCRETE_SEAM = rgba('#c8cdd2');
 const CONCRETE_SPECK = [rgba('#cdd1d5'), rgba('#eceeef')] as const;
 
-const VOUTE_CONCRETE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mix('#12090e', '#1c0f17', i / (LEVELS - 1))));
+const VOUTE_CONCRETE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mix('#3b2a55', '#46345f', i / (LEVELS - 1))));
 const VOUTE_CONCRETE_EDGE: readonly RGBA[] = VOUTE_CONCRETE.map((c) => rgba(shade(`rgb(${c[0]},${c[1]},${c[2]})`, 0.02)));
-const VOUTE_CONCRETE_SEAM = rgba('#0d060a');
-const VOUTE_CONCRETE_SPECK = [rgba('#2a0a12'), rgba('#3a0f1e')] as const;
+const VOUTE_CONCRETE_SEAM = rgba('#241838');
+const VOUTE_CONCRETE_SPECK = [rgba('#55407a'), rgba('#6a2a5a')] as const;
 
 /** Cimento polido em placas de 2x2 tiles, com manchas suaves contínuas. */
 function paintConcrete(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {
@@ -280,9 +281,9 @@ const MARBLE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mi
 const MARBLE_VEIN = [rgba('#e2e3e6'), rgba('#cfd2d7')] as const;
 const MARBLE_SEAM = rgba('#d6d3ce');
 
-const VOUTE_MARBLE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mix('#1b0b12', '#26101a', i / (LEVELS - 1))));
-const VOUTE_MARBLE_VEIN = [rgba('#4a1423'), rgba('#d4a64a')] as const;
-const VOUTE_MARBLE_SEAM = rgba('#12090e');
+const VOUTE_MARBLE: readonly RGBA[] = Array.from({ length: LEVELS }, (_, i) => rgba(mix('#3a1c2c', '#4a2438', i / (LEVELS - 1))));
+const VOUTE_MARBLE_VEIN = [rgba('#7a2a45'), rgba('#d4a64a')] as const;
+const VOUTE_MARBLE_SEAM = rgba('#22101a');
 
 /** Mármore em placas de 2x2 tiles com veios contínuos dentro da placa. */
 function paintMarble(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {
@@ -311,8 +312,8 @@ function paintMarble(b: PixelBuf, x0: number, y0: number, seed: number, voute: b
 const WALK_TONES = ['#d3cdc2', '#cfc8bc', '#d8d2c8'] as const;
 const WALK: readonly (readonly RGBA[])[] = WALK_TONES.map((t) => [t, '#b8b1a5', shade(t, 0.03), shade(t, -0.05)].map(rgba));
 
-const VOUTE_WALK_TONES = ['#302e3a', '#2b2935', '#343240'] as const;
-const VOUTE_WALK: readonly (readonly RGBA[])[] = VOUTE_WALK_TONES.map((t) => [t, '#1b1a20', shade(t, 0.03), shade(t, -0.04)].map(rgba));
+const VOUTE_WALK_TONES = ['#5a5670', '#524e68', '#625e7a'] as const;
+const VOUTE_WALK: readonly (readonly RGBA[])[] = VOUTE_WALK_TONES.map((t) => [t, '#2a2838', shade(t, 0.03), shade(t, -0.04)].map(rgba));
 
 /** Calçada de placas 16x8 em fileiras desencontradas. */
 function paintSidewalk(b: PixelBuf, x0: number, y0: number, seed: number, voute: boolean): void {

@@ -28,7 +28,7 @@ describe('La Voûte (cliente)', () => {
   it('modo normal: suma las seis salas y todas las residentes en reposo, con nombre de oficina y look normal', () => {
     const o = aplicarVoute(snap([]), false);
     expect(o.rooms.map((r) => r.id)).toEqual(VOUTE_SALAS.map((s) => s.id));
-    expect(o.rooms.map((r) => r.name)).toContain('Recepción');
+    expect(o.rooms.map((r) => r.name)).toContain('Portería');
     expect(o.rooms.map((r) => r.name)).not.toContain('Entrada');
     const res = residentes(o);
     expect(res).toHaveLength(Object.keys(VOUTE_AGENTES).length);

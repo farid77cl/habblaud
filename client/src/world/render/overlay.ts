@@ -745,9 +745,11 @@ export class Overlay {
     const { x, y, w, h } = b;
     const headX = this.sx(b.head.x);
     const tone = b.tone;
-    const bg = tone === 'alert' ? '#ffcf4a' : tone === 'deliver' ? '#e2f0ff' : tone === 'shell' ? '#1d2433' : tone === 'say' ? '#ffffff' : '#fffdf8';
-    const border = tone === 'alert' ? '#c58f10' : tone === 'deliver' ? '#7aa7d9' : tone === 'shell' ? '#4b5d7e' : tone === 'say' ? 'rgba(40,48,66,0.38)' : 'rgba(40,48,66,0.22)';
-    const fg = tone === 'alert' ? '#3b2a00' : tone === 'deliver' ? '#17324f' : tone === 'shell' ? '#b9f6b4' : tone === 'say' ? '#1d2330' : '#232a36';
+    // En La Voûte los globos llevan fondo claro y opaco con borde dorado, para leerse sobre el burdeos (Barbie 11/11).
+    const lv = isVoute();
+    const bg = tone === 'alert' ? '#ffcf4a' : tone === 'deliver' ? '#e2f0ff' : tone === 'shell' ? '#1d2433' : tone === 'say' ? '#ffffff' : lv ? '#fff6e6' : '#fffdf8';
+    const border = tone === 'alert' ? '#c58f10' : tone === 'deliver' ? '#7aa7d9' : tone === 'shell' ? '#4b5d7e' : lv ? '#d4a64a' : tone === 'say' ? 'rgba(40,48,66,0.38)' : 'rgba(40,48,66,0.22)';
+    const fg = tone === 'alert' ? '#3b2a00' : tone === 'deliver' ? '#17324f' : tone === 'shell' ? '#b9f6b4' : tone === 'say' ? '#1d2330' : lv ? '#2a0a12' : '#232a36';
     const pulse = tone === 'alert' ? 1 + Math.sin(now / 160) * 0.035 : 1;
     ctx.save();
     ctx.globalAlpha = b.alpha;

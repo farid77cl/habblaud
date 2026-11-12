@@ -55,8 +55,8 @@ export function layoutExterior(cols: number): ExteriorLayout {
 
   if (voute) {
     // Cartel de neón principal "LA VOÛTE" en la entrada y en la fachada sur
-    props.push({ kind: 'neon_sign', x: px(0), y: px(CORRIDOR_Y + 1), seed: 1 });
-    props.push({ kind: 'neon_sign', x: px(COL_W), y: px(south + 1) + 6, seed: 2 });
+    props.push({ kind: 'neon_sign', x: px(-8), y: px(CORRIDOR_Y + 3), seed: 1 });
+    props.push({ kind: 'neon_sign', x: px(COL_W), y: px(south + 3) + 10, seed: 2 });
     // Cuerdas de terciopelo con postes dorados flanqueando la entrada
     props.push({ kind: 'velvet_rope', x: px(-2) - 4, y: px(CORRIDOR_Y + 4) + 6, seed: 3 });
     props.push({ kind: 'velvet_rope', x: px(-2) - 4, y: px(CORRIDOR_Y + 7) + 6, seed: 4 });

@@ -363,8 +363,13 @@ function totemSprite(): PropSprite {
 }
 
 /** Cartel luminoso de neón "LA VOÛTE" en rosa neón (#ff3fa4) y marco dorado (#d4a64a). */
+/** Escala del letrero (Barbie 11/11: «al menos 3 veces más grande, con halo»): se dibuja en la grilla 64x24 y se amplía. */
+const NEON_SCALE = 3;
+
 function neonSignSprite(): PropSprite {
-  const [c, ctx] = makeCanvas(64, 24);
+  const S = NEON_SCALE;
+  const [c, ctx] = makeCanvas(64 * S, 24 * S);
+  ctx.scale(S, S);
   shadowEllipse(ctx, 32, 22, 26, 2, 0.3);
   // Respaldo metálico oscuro y marco de latón dorado
   ctx.fillStyle = '#160912';
@@ -380,7 +385,10 @@ function neonSignSprite(): PropSprite {
     ctx.fillRect(bx, 2, 2, 1);
     ctx.fillRect(bx, 19, 2, 1);
   }
-  // Tubos de neón "LA VOÛTE" en #ff3fa4 con núcleo brillante #ff9ad5
+  // Tubos de neón "LA VOÛTE" en #ff3fa4 con núcleo brillante #ff9ad5 y halo rosa alrededor de los tubos
+  const glow = ctx as unknown as { shadowColor: string; shadowBlur: number };
+  glow.shadowColor = VP.rn;
+  glow.shadowBlur = 10;
   ctx.fillStyle = VP.rn;
   // L A
   ctx.fillRect(7, 7, 2, 8);
@@ -411,12 +419,13 @@ function neonSignSprite(): PropSprite {
   ctx.fillRect(55, 13, 5, 2);
   ctx.fillRect(55, 7, 2, 8);
   // Brillo central de neón #ff9ad5
+  glow.shadowBlur = 0;
   ctx.fillStyle = VP.rg;
   ctx.fillRect(8, 8, 1, 5);
   ctx.fillRect(24, 8, 1, 4);
   ctx.fillRect(32, 8, 4, 1);
   ctx.fillRect(50, 8, 1, 6);
-  return { canvas: c, ax: 32, ay: 22 };
+  return { canvas: c, ax: 32 * S, ay: 22 * S };
 }
 
 /** Cuerda de terciopelo carmesí (#8c2240) entre dos postes de latón dorado (#d4a64a). */
