@@ -45,3 +45,40 @@ Leído con `git show` línea a línea en lo que toca al modo normal (layout, ilu
 - `cabaret.ts` tiene 1043 líneas y 2c0dcdd trae 31 archivos sin un plan revisado: está sobredimensionado para un tema visual.
 - La inyección de salas demo en `net/voute-estado.ts` (2f2f27e) solo corre con el botón encendido. Está bien, pero sus tests no la cubren.
 - Los tests de muebles (`art/voute-furniture.test.ts:61,132`) prueban que existen y que son distintos, no cómo se comportan. Los de layout y temporada sí prueban comportamiento.
+
+## Revisión 3: commits 91af482, 0488112, f088eab y 7ee47d6 (12/11/2026)
+
+Leído `git diff 0bdfe35..7ee47d6` (39 archivos). `npm run typecheck` → verde. `npm run build` → verde (`dist/build.json 7ee47d655438`). `npx vitest run` → `Test Files 2 failed | 165 passed (167) · Tests 2 failed | 1951 passed | 2 skipped (1955)`. Los dos rojos (`server/test/statusline.test.ts:314`, `server/world/uplink.test.ts:410`) también fallan en `origin/main` (`faa1a01`, corrido en un worktree aparte: `2 failed | 47 passed`), y el diff no toca esos archivos.
+
+**Veredicto: PASA.**
+
+### Datos verdaderos hacia el World (lo primero)
+- **El servidor ya no inventa nada.** `server/model/office.ts:993` arma `agents: [...real, ...demoAgents]`: salieron `residentesAusentes`, `VOUTE_SALAS`, el nombre de Ele y el nombre o look fijo en `addSub`. `server/index.ts` ya no pasa `residents: true`. `server/model/model.test.ts` lo prueba: sin agentes reales el snapshot sale vacío, y una principal en `LaVouteDAnais` no se renombra ni trae nada `voute:*`.
+- **Nada del servidor ni de `shared/world/` importa los módulos voute** (`server/voute-aislada.test.ts`, verde; lo confirmé con grep).
+- **`shared/timeline.ts:234` solo restringe.** `isDemoId` ahora devuelve `true` para más ids, y todos sus llamadores lo usan para sacar algo: la proyección (`shared/world/projection.ts:138-141`), el uplink (`server/world/uplink.ts:704`), el historial (`server/history/timeline.ts:88`), `server/index.ts:371` y, en el cliente, la terminal, renombrar sala, spawn y el editor de personaje. Ninguno usa `isDemoId` para agregar o inflar datos. Un id real no puede empezar con `voute:`, porque las salas son rutas o alias y los agentes son `acc:`/sesión. Los tests `shared/world/projection.test.ts` (La Voûte nunca entra) y `shared/timeline.test.ts` fallarían sin el cambio, así que prueban comportamiento.
+- **La vista no sube nada.** `aplicarVoute` corre solo en `OfficeStore.setSnapshot` (`client/src/net/store.ts:397`). Las llamadas del cliente al World (`client/src/net/world.ts:368-439`) no llevan agentes ni salas, y la visita usa un store propio sin vista (`client/src/world/visit/index.ts:81`).
+
+### ¿Puede una sala real quedar tapada o corrida? Tapada no. Corrida, sí, en la carga inicial.
+Trixie lo dijo al revés: ninguna sala real pierde su lugar frente a una inventada. `aplicarVoute` (`client/src/net/voute-estado.ts:111`) le da a las salas `voute:*` solo los slots que no usa ninguna real, y el test `voute-estado.test.ts:60` prueba que no se repiten. Además el Sim asigna su propia vaga en el edificio: el slot del servidor solo da el orden (`client/src/world/sim/sim.ts:177-178, 260-274`). Hay un efecto que no bloquea: en la carga inicial las seis salas del cabaret se intercalan en los huecos entre las reales (una real con slot 2 cae en la vaga 2 y no en la 1), y un proyecto nuevo se abre después de las seis. No hay solape.
+
+### Reconocimiento de Ele
+`esDeEle` (`voute-estado.ts:91`) busca el tramo `lavoutedanais` en cualquier parte de la ruta o un prefijo configurado en `habblaud:voute-ele`. Toma solo la primera principal que calce. Cubre worktrees y subcarpetas, y rechaza `lavoutedanais-viejo` (test `voute-estado.test.ts:103`). El look es una copia, porque `vouteAgente` devuelve `copia` (`shared/voute-agentes.ts:72`), y no se toca el estado del servidor. Los bloqueos 2 y 3 de la revisión 1 quedan cerrados.
+
+### Bloqueos anteriores
+- R2-1 (diseño del 11/11): cerrado. Hay seis salas por oficio (`shared/voute-residentes.ts:15`) con nombre de oficina en modo normal y nombre de cabaret con LV. Las seis tienen layout propio: entrada con cordón (`stanchion`), barra, maquillaje, privados, escenario con `stage_piano` y habitación de Anaïs con `canopy_bed` (`client/src/world/layout/voute-rooms.ts`). El botón «+ Agente» está en `client/src/ui/voute-agregar.ts`, y `voute-world.test.ts:74` prueba que los seis espacios existen, son distintos y se pueden recorrer.
+- R2-2 (`roomTheme`): cerrado. Volvió a depender del modo (`client/src/art/theme.ts:47`), y en modo normal `roomTheme(1,'voute:maquillaje')` es igual a `roomTheme(1)` (test `voute-surfaces.test.ts`).
+- Botón LV pequeño (orden del 12/11): se cumple. `client/src/ui/voute.ts` y su CSS no cambian; «+ Agente» es igual de discreto (26 px, `styles.css`).
+
+### Las cuatro preguntas
+- **¿Hace lo que dice el plan?** Sí. Todo lo de fuera del estado (luz, neón ×3, calle, globos, pisos más claros) viene de la revisión de Barbie y queda detrás de `isVoute()`. En modo normal, `overlay.ts` y `lighting.ts` dan lo mismo que antes, y `SO_VOUTE` en `art/furniture/index.ts` solo dibuja muebles que las salas de oficina no usan.
+- **¿Usa lo que ya existía?** Sí. Usa `hash32` de `shared/hash` (ya no lo duplica), `parseCharacterName` y `NAME_MAX` para el nombre de «+ Agente», y el `isDemoId` que ya existía en vez de un filtro nuevo.
+- **¿Rompe algo fuera?** No. Typecheck y build pasan, y los dos rojos son de `origin/main`.
+- **¿Los tests prueban comportamiento?** Sí. Hay que ajustar dos tests, pero lo hicieron siguiendo el diseño y no para que pasaran: el de las 5 salas pasó a 6, y el del nombre fijo en el servidor ahora prueba que el servidor no los pone.
+
+### Menores (no bloquean)
+- El orden de las salas en la carga inicial (ver arriba). Si se quiere que las reales queden igual que en upstream, las salas `voute:*` pueden ir después del slot real más alto.
+- La vista también se aplica a los cuadros del timelapse (`store.ts:397`), así que en la repetición se ven residentes que el historial no tiene. Es solo de la pantalla.
+- Una sub con role del equipo cambia de nombre solo en la vista. El feed o el historial que salen del servidor pueden mostrar el nombre sorteado.
+- `habblaud:voute-ele` no tiene interfaz: hoy se configura a mano desde la consola.
+- Con LV, una sala real toma un estilo de cabaret según su slot (`client/src/world/layout/room.ts:76`) y puede repetir uno de los seis espacios.
+- `server/voute-aislada.test.ts` no detecta un import con extensión (`voute-residentes.js`). Hoy no hay ninguno.
