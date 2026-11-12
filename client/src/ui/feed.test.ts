@@ -94,6 +94,25 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('FeedPanel pausado', () => {
+  it('usa o nome da vista nas linhas e no ticker, atualiza e conserva após a saída', () => {
+    const raw = agent('Ulisses');
+    const dolly = { ...raw, name: 'Dolly' };
+    const event = item('leitura', raw);
+    const p = panel([event], [dolly]);
+    const ticker = elements.find((e) => e.className === 'ui-feed__ticker')!;
+    expect(ticker.textContent).toContain('Dolly:');
+    expect(elements.some((e) => e.textContent === 'Dolly')).toBe(true);
+    expect(elements.some((e) => e.title.includes('Dolly em Sala'))).toBe(true);
+    dolly.name = 'Kitty';
+    p.view.render();
+    expect(ticker.textContent).toContain('Kitty:');
+    p.snapshot.agents = [];
+    p.view.render();
+    expect(ticker.textContent).toContain('Kitty:');
+    expect(elements.some((e) => e.textContent === 'Kitty')).toBe(true);
+    expect(event.agentName).toBe('Ulisses');
+  });
+
   it.each(['SSE', 'social'])('guarda só os 50 eventos mais novos de %s, sem perder a contagem por conta', (source) => {
     const shown = agent('visível');
     const hidden = agent('oculto', '.claude-2');

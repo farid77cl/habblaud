@@ -1324,14 +1324,16 @@ export class Sim {
   }
 
   private lobbyTile(ch: Character): { x: number; y: number } {
-    const reception = this.building.core.find((a) => a.id === RECEPTION_ID)!;
+    const reception = this.building.core.find((a) => a.id === RECEPTION_ID)
+      ?? this.building.rooms.find((a) => a.id === 'voute:entrada')
+      ?? this.building.corridor;
     const r = reception.rect;
     for (let k = 0; k < 20; k++) {
-      const x = r.x + 2 + Math.floor(ch.rng() * 12);
-      const y = r.y + 3 + Math.floor(ch.rng() * 7);
+      const x = r.x + 1 + Math.floor(ch.rng() * Math.max(1, r.w - 2));
+      const y = r.y + 2 + Math.floor(ch.rng() * Math.max(1, r.h - 4));
       if (this.building.grid.get(x, y) === 1) return { x, y };
     }
-    return { x: r.x + 6, y: r.y + 9 };
+    return this.building.grid.nearestWalkable(r.x + 6, r.y + Math.min(9, r.h - 1)) ?? { x: r.x + 1, y: r.y + 2 };
   }
 
   private planDelegate(ch: Character, now: number): void {

@@ -80,8 +80,10 @@ describe('La Voûte — exterior nocturno, cartel de neón y supresión estacion
       return layoutProjectRoom({ id: s.id, slot, seed: 100 + slot }, th);
     });
     const b = assembleBuilding(columnsFor(slots), rooms);
-    const reception = coreAreas().find((a) => a.id === RECEPTION_ID)!;
-    const elevator = reception.spots.find((s) => s.kind === 'elevator')!;
+    expect(b.cols).toBe(3);
+    expect(b.core).toEqual([]);
+    expect(b.rooms).toHaveLength(6);
+    const elevator = b.spots.find((s) => s.kind === 'elevator')!;
     const reach = b.grid.reachableFrom(elevator.tx, elevator.ty);
     const reachable = (x: number, y: number) => reach[y * b.grid.w + x] === 1;
 
@@ -162,7 +164,7 @@ describe('La Voûte — exterior nocturno, cartel de neón y supresión estacion
 
   it('en la opción normal (!isVoute()), tanto el núcleo como las 6 salas se ven 100% como oficina normal sin restos de caché', () => {
     setVouteMode(true);
-    expect(coreAreas()[0].walls[0].style.base).toBe(VOUTE_CORE_WALLS.reception.base);
+    expect(coreAreas()).toEqual([]);
 
     setVouteMode(false);
     expect(coreAreas()[0].walls[0].style.base).toBe(CORE_WALLS.reception.base);

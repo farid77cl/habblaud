@@ -27,7 +27,7 @@ export function coreAreas(): AreaLayout[] {
   const v = isVoute();
   if (!coreCache || coreVoute !== v) {
     coreVoute = v;
-    coreCache = [layoutReception(), layoutRestroom(), layoutCafe(), layoutLounge()];
+    coreCache = v ? [] : [layoutReception(), layoutRestroom(), layoutCafe(), layoutLounge()];
   }
   return coreCache;
 }

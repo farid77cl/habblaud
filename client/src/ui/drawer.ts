@@ -869,7 +869,7 @@ class RoomView {
 
     const feedList = h('ol', { class: 'ui-timeline' });
     this.feedSec = section(tr('Atividade recente'), feedList);
-    this.feed = new KeyedList<FeedItem>(feedList, { key: (f) => f.id, create: createTimelineItem, update: (li, f) => updateTimelineItem(li, f.activity, ctx.now(), f.agentName) });
+    this.feed = new KeyedList<FeedItem>(feedList, { key: (f) => f.id, create: createTimelineItem, update: (li, f) => updateTimelineItem(li, f.activity, ctx.now(), ctx.agent(f.agentId)?.name ?? f.agentName) });
 
     this.el = h(
       'div',

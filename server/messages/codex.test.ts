@@ -90,6 +90,18 @@ describe('codex queue (binário falso)', () => {
     expect(findCodexBin({ PATH: npm })).toBeUndefined();
     expect(findCodexBin({ PATH: [npm, tmp.dir].join(delimiter) })).toBe(bin);
   });
+
+  it('usa o CLI do aplicativo quando falta no PATH, validando o executável e preservando os overrides', () => {
+    const desktop = () => bin;
+    expect(findCodexBin({ PATH: '' }, undefined, desktop)).toBe(bin);
+    expect(findCodexBin({ PATH: '' }, undefined, () => join(tmp.dir, 'ausente.exe'))).toBeUndefined();
+    expect(findCodexBin({ PATH: '' }, undefined, () => 'codex.exe')).toBeUndefined();
+    expect(findCodexBin({ PATH: '' }, undefined, () => undefined)).toBeUndefined();
+    const unexpected = () => { throw new Error('não deveria consultar o aplicativo'); };
+    expect(findCodexBin({ PATH: tmp.dir }, undefined, unexpected)).toBe(bin);
+    expect(findCodexBin({ HABBLAUD_CODEX_BIN: bin }, undefined, unexpected)).toBe(bin);
+    expect(findCodexBin({ HABBLAUD_CODEX_BIN: join(tmp.dir, 'ausente.exe') }, undefined, unexpected)).toBeUndefined();
+  });
 });
 
 /** Runner controlado pelo teste: cada chamada fica pendente até `finish`. */

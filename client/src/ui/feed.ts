@@ -13,7 +13,7 @@ import { tr } from '../../../shared/i18n';
 
 const VISIBLE = 50;
 
-type AgentMeta = Pick<AgentInfo, 'seed' | 'look' | 'kind' | 'account' | 'parts'>;
+type AgentMeta = Pick<AgentInfo, 'name' | 'seed' | 'look' | 'kind' | 'account' | 'parts'>;
 
 export class FeedPanel implements UiComponent {
   readonly el: HTMLElement;
@@ -93,8 +93,8 @@ export class FeedPanel implements UiComponent {
   render(): void {
     for (const a of this.ctx.store.snapshot?.agents ?? []) {
       const m = this.meta.get(a.id);
-      if (!m || m.seed !== a.seed || m.account !== a.account || partsKey(m.parts) !== partsKey(a.parts)) {
-        this.meta.set(a.id, { seed: a.seed, look: a.look, kind: a.kind, account: a.account, parts: a.parts });
+      if (!m || m.name !== a.name || m.seed !== a.seed || m.account !== a.account || partsKey(m.parts) !== partsKey(a.parts)) {
+        this.meta.set(a.id, { name: a.name, seed: a.seed, look: a.look, kind: a.kind, account: a.account, parts: a.parts });
       }
     }
     const open = this.ctx.isPanelOpen('feed');
@@ -125,7 +125,7 @@ export class FeedPanel implements UiComponent {
     }
 
     const latest = pending[pending.length - 1] ?? visible[visible.length - 1];
-    setText(this.ticker, latest ? `${latest.agentName}: ${latest.activity.icon} ${latest.activity.text}` : '');
+    setText(this.ticker, latest ? `${this.agentName(latest)}: ${latest.activity.icon} ${latest.activity.text}` : '');
     this.toggleBtn.innerHTML = open ? ICONS.chevronDown : ICONS.chevronUp;
     const label = open ? tr('Recolher feed ( ] )') : tr('Abrir feed ( ] )');
     setAttr(this.toggleBtn, 'aria-label', label);
@@ -218,7 +218,7 @@ export class FeedPanel implements UiComponent {
     setText(time, formatClock(f.activity.at));
     setAttr(time, 'datetime', new Date(f.activity.at).toISOString());
     if (m) updateAvatar(avatar, m, 'xs');
-    setText(who, f.agentName);
+    setText(who, this.agentName(f));
     const acc = this.accountOf(f);
     updateAccountChip(chip, acc ? this.ctx.account(acc) : undefined, acc ?? '');
     setHidden(chip, !acc);
@@ -233,13 +233,17 @@ export class FeedPanel implements UiComponent {
     li.classList.toggle('is-shell-fail', done === 'fail');
     const present = !!this.ctx.agent(f.agentId);
     li.classList.toggle('is-gone', !present);
-    setTitle(btn, `${formatClock(f.activity.at)} · ${f.agentName} em ${f.roomName}\n${f.activity.text}${f.activity.detail ? `\n${f.activity.detail}` : ''}`);
+    setTitle(btn, `${formatClock(f.activity.at)} · ${this.agentName(f)} em ${f.roomName}\n${f.activity.text}${f.activity.detail ? `\n${f.activity.detail}` : ''}`);
+  }
+
+  private agentName(item: FeedItem): string {
+    return this.ctx.agent(item.agentId)?.name ?? this.meta.get(item.agentId)?.name ?? item.agentName;
   }
 
   private metaFromStore(id: string): AgentMeta | undefined {
     const a = this.ctx.agent(id);
     if (!a) return undefined;
-    const m = { seed: a.seed, look: a.look, kind: a.kind, account: a.account, parts: a.parts };
+    const m = { name: a.name, seed: a.seed, look: a.look, kind: a.kind, account: a.account, parts: a.parts };
     this.meta.set(id, m);
     return m;
   }

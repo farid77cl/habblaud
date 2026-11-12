@@ -3,7 +3,7 @@ import { parseCharacterName } from '../../../shared/appearance';
 import { hash32 } from '../../../shared/hash';
 import type { AgentInfo, OfficeSnapshot, RoomInfo } from '../../../shared/types';
 import { vouteAgente } from '../../../shared/voute-agentes';
-import { VOUTE_SALAS, residenteExtra, residentesAusentes, vouteSalaNombre, type ResidenteExtra, type VouteSalaKey } from '../../../shared/voute-residentes';
+import { VOUTE_SALAS, residenteExtra, residentesAusentes, vouteSalaNombre, vouteSalaId, type ResidenteExtra, type VouteSalaKey } from '../../../shared/voute-residentes';
 
 export const VOUTE_KEY = 'habblaud:voute';
 export const VOUTE_CLASS = 'voute';
@@ -105,7 +105,7 @@ function esDeEle(path: string | undefined, eleRuta: string | undefined): boolean
 export function aplicarVoute(snap: OfficeSnapshot, on: boolean, opts: OpcionesVoute = {}): OfficeSnapshot {
   const now = snap.meta?.startedAt ?? snap.serverTime ?? Date.now();
   const reales = Array.isArray(snap.rooms) ? snap.rooms : [];
-  const usados = new Set(reales.map((r) => r.slot));
+  const usados = new Set(on ? [] : reales.map((r) => r.slot));
   let libre = 0;
   const salas: RoomInfo[] = VOUTE_SALAS.map((s) => {
     while (usados.has(libre)) libre++;
@@ -138,9 +138,14 @@ export function aplicarVoute(snap: OfficeSnapshot, on: boolean, opts: OpcionesVo
     return v ? { ...r, parts: v.partsVoute } : r;
   });
   const extras = (opts.extras ?? []).map((e) => residenteExtra(e, now));
+  const agentes = [...reales2, ...ausentes, ...extras];
   return {
     ...snap,
-    rooms: [...reales, ...salas],
-    agents: [...reales2, ...ausentes, ...extras],
+    rooms: on ? salas : [...reales, ...salas],
+    agents: on ? agentes.map((a) => {
+      if (a.roomId.startsWith('voute:')) return a;
+      const identidad = vouteAgente(a.role) ?? vouteAgente(a.name);
+      return { ...a, roomId: vouteSalaId(identidad?.name.toLowerCase() ?? 'ele') };
+    }) : agentes,
   };
 }

@@ -10,6 +10,16 @@ do meio (0.**3**.0).
 
 ## [Não lançado]
 
+### Corrigido
+
+- **La Voûte compacta:** o modo cabaré mostra seis salas em três colunas. Os agentes dos projetos ocupam as salas
+  da casa por ofício, e a entrada do corredor recebe as chegadas, eliminando as salas comuns duplicadas.
+- **Nomes de La Voûte na atividade:** o painel e a atividade da sala usam a identidade exibida do agente.
+  O painel conserva esse nome quando o agente sai, em vez de voltar ao nome sorteado pelo servidor.
+- **Codex no Windows:** o envio de mensagens também encontra o CLI incluído no aplicativo da Microsoft Store
+  quando ele não está no PATH. A localização é consultada no registro de aplicativos instalados, acompanhando
+  atualizações do Codex; `HABBLAUD_CODEX_BIN` continua tendo prioridade.
+
 ### Adicionado
 
 - **La Voûte (fork): residentes em seis salas e o modo cabaré.** As agentes da casa ficam em repouso no escritório,

@@ -51,6 +51,23 @@ describe('La Voûte (cliente)', () => {
     expect(o.rooms.find((r) => r.id === '/p/a')?.slot).toBe(0);
   });
 
+  it('LV compacto: seis salas, agentes reales por oficio y vuelta a los proyectos al apagar', () => {
+    const original = snap([
+      ag('Ele', { custom: true }),
+      ag('Azar', { id: 's1', kind: 'sub', role: 'dolly' }),
+      ag('Ele · Codex', { id: 'codex', roomId: 'r2', provider: 'codex', custom: true }),
+    ], [room('r1', 8), room('r2', 17)]);
+    const before = JSON.stringify(original);
+    const compact = aplicarVoute(original, true);
+    expect(compact.rooms).toHaveLength(6);
+    expect(compact.rooms.map((r) => r.slot)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(compact.agents.find((a) => a.id === 's1')).toMatchObject({ name: 'Dolly', roomId: 'voute:privados' });
+    expect(compact.agents.find((a) => a.id === 'codex')).toMatchObject({ name: 'Ele · Codex', roomId: 'voute:entrada' });
+    expect(compact.agents.every((a) => compact.rooms.some((r) => r.id === a.roomId))).toBe(true);
+    expect(JSON.stringify(original)).toBe(before);
+    expect(aplicarVoute(original, false).agents.find((a) => a.id === 'codex')?.roomId).toBe('r2');
+  });
+
   it('no toca el snapshot crudo', () => {
     const s = snap([ag('Marina')], [room('r1', 0)]);
     const copia = JSON.stringify(s);

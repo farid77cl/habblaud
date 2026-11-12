@@ -26,6 +26,8 @@ export function layoutCorridor(cols: number): AreaLayout {
     b.furn('glass_partition', w - 1, ly, ly === 0 || ly === CORRIDOR_H - 1 ? 'end' : 'v', { order: 0.1 });
   }
   b.walk(1, 0, w - 2, CORRIDOR_H);
+  // En LV las llegadas y salidas usan la puerta oeste, integrada al pasillo.
+  if (voute) b.spot('elevator', 1, 2, 'right');
 
   for (let c = 0; c < cols; c++) {
     const x = c * COL_W;

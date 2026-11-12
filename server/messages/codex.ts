@@ -9,7 +9,7 @@
 // esteja com o thread aberto agora; outro retorno = falhou, e a 1ª linha do stderr diz por quê ("Error: ... no rollout
 // found for thread id ..."). Se o servidor compartilhado do Codex (daemon) não estiver no ar, o próprio comando o sobe.
 // Node puro e sem dependências: também é importado pelo auxiliar do host (via tsx).
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { accessSync, constants, statSync } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { tr } from '../../shared/i18n';
@@ -47,8 +47,26 @@ function canExecute(p: string): boolean {
  */
 export const CODEX_BIN_NAME = process.platform === 'win32' ? 'codex.exe' : 'codex';
 
-/** Binário do Codex: HABBLAUD_CODEX_BIN (caminho de um executável) ou `codex` no PATH. undefined = não achou. */
-export function findCodexBin(env: NodeJS.ProcessEnv, isExecutable: (p: string) => boolean = canExecute): string | undefined {
+/** O aplicativo da Microsoft Store inclui o CLI, mas não publica um alias codex.exe no PATH. */
+function windowsCodexBin(env: NodeJS.ProcessEnv): string | undefined {
+  if (process.platform !== 'win32' || !env.SystemRoot) return undefined;
+  try {
+    const powershell = join(env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+    const location = execFileSync(powershell, ['-NoProfile', '-NonInteractive', '-Command',
+      '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Get-AppxPackage -Name OpenAI.Codex | Select-Object -First 1 -ExpandProperty InstallLocation',
+    ], { env, encoding: 'utf8', timeout: 5_000, windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return location && isAbsolute(location) ? join(location, 'app', 'resources', 'codex.exe') : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Binário do Codex: configuração explícita, PATH ou CLI incluído no aplicativo do Windows. */
+export function findCodexBin(
+  env: NodeJS.ProcessEnv,
+  isExecutable: (p: string) => boolean = canExecute,
+  desktopBin: () => string | undefined = () => windowsCodexBin(env),
+): string | undefined {
   const explicit = env.HABBLAUD_CODEX_BIN?.trim();
   if (explicit) return isExecutable(explicit) ? explicit : undefined;
   for (const dir of (env.PATH ?? '').split(delimiter)) {
@@ -56,7 +74,8 @@ export function findCodexBin(env: NodeJS.ProcessEnv, isExecutable: (p: string) =
     const p = join(dir, CODEX_BIN_NAME);
     if (isExecutable(p)) return p;
   }
-  return undefined;
+  const bundled = desktopBin();
+  return bundled && isAbsolute(bundled) && isExecutable(bundled) ? bundled : undefined;
 }
 
 /** Argumentos de `codex queue` (com "=": um texto que começa com "-" nunca vira uma opção). */
