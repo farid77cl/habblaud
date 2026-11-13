@@ -22,6 +22,9 @@ do meio (0.**3**.0).
 
 ### Adicionado
 
+- **Conversa na ficha do agente:** mensagens e respostas aparecem junto à caixa de envio, ao vivo, com histórico
+  recente e formatação das respostas. A leitura usa o mesmo acesso protegido da terminal e fecha com a ficha.
+
 - **La Voûte (fork): residentes em seis salas e o modo cabaré.** As agentes da casa ficam em repouso no escritório,
   repartidas por ofício em seis salas, e o botão **LV** (pequeno e discreto, na barra de cima) transforma as seis em
   entrada com cordão VIP, bar com banquetas, sala de maquiagem com penteadeiras de lâmpadas, privados com cortina, palco

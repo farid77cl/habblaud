@@ -5,6 +5,7 @@ import { roomTheme } from '../art';
 import { createAvatarPlaceholder, updateAvatar } from './avatar';
 import { CharacterEditor } from './character-editor';
 import { MessageComposer } from './composer';
+import { Conversation } from './conversation';
 import type { UiComponent, UiContext } from './context';
 import { copyText, h, iconButton, KeyedList, setAttr, setHidden, setStyleVar, setText, setTitle, setVariant } from './dom';
 import {
@@ -244,6 +245,8 @@ class AgentView {
   private actDetail: HTMLElement;
   /** Mandar mensagem ao agente principal pelo Habblaud (plugin habblaud-mensagens). */
   private composer: MessageComposer;
+  private conversation: Conversation;
+  private conversationSec: ReturnType<typeof section>;
   private msgSec: ReturnType<typeof section>;
   private tasksSec: ReturnType<typeof section>;
   private tasksBar: HTMLElement;
@@ -356,6 +359,8 @@ class AgentView {
     this.actDetails = h('details', { class: 'ui-now__details' }, h('summary', { text: tr('Detalhes') }), this.actDetail);
     const nowSec = section(tr('Agora'), h('div', { class: 'ui-now' }, this.actIcon, h('div', { class: 'ui-now__body' }, this.actText, this.actTime)), this.actDetails);
     this.composer = new MessageComposer(ctx, 'drawer');
+    this.conversation = new Conversation();
+    this.conversationSec = section(tr('Conversa'), this.conversation.el);
     this.msgSec = section(tr('Mandar mensagem'), this.composer.el);
     // No celular a caixa fica presa no rodapé da gaveta enquanto a conversa rola (styles.css, .ui-sec--msg).
     this.msgSec.el.classList.add('ui-sec--msg');
@@ -418,6 +423,7 @@ class AgentView {
       this.shellBox,
       this.shellsSec.el,
       nowSec.el,
+      this.conversationSec.el,
       this.msgSec.el,
       this.social.el,
       this.tasksSec.el,
@@ -432,8 +438,14 @@ class AgentView {
     return this.id;
   }
 
+  close(): void {
+    this.character.close();
+    this.conversation.close();
+  }
+
   open(id: string): void {
     if (this.id === id) return;
+    this.conversation.close();
     this.character.open(id);
     this.id = id;
     this.last = null;
@@ -616,6 +628,10 @@ class AgentView {
     setText(this.actDetail, detail);
 
     // Mandar mensagem: só para principais presentes (com o recurso ligado e a página local; sem o plugin, a dica).
+    const canRead = !!live && !!this.ctx.store.snapshot?.meta.terminal && access().terminal
+      && !this.ctx.store.replaying && !this.ctx.store.mock && !this.id.startsWith('voute:');
+    setHidden(this.conversationSec.el, !canRead);
+    this.conversation.render(live, canRead);
     setHidden(this.msgSec.el, this.composer.render(live, this.id) === 'off');
 
     // Vida social (personalidade, carteira, rodas): só de quem está no escritório.
@@ -1005,7 +1021,7 @@ export class Drawer implements UiComponent {
     const mode = sel?.type ?? null;
     if (mode !== this.mode) {
       // Gaveta fechada ou fora do agente: o editor fecha, e ao reabrir começa do estado atual do agente.
-      if (this.mode === 'agent') this.agentView.character.close();
+      if (this.mode === 'agent') this.agentView.close();
       this.mode = mode;
       this.body.replaceChildren(...(mode === 'agent' ? [this.agentView.el] : mode === 'room' ? [this.roomView.el] : []));
       this.body.scrollTop = 0;

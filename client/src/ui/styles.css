@@ -11330,3 +11330,45 @@ html.voute body {
   min-height: 1em;
   color: var(--ui-muted, inherit);
 }
+
+/* Conversa na ficha: respostas legíveis junto ao envio, sem prender a rolagem da ficha. */
+.ui-conversation__scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.ui-conversation__messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ui-conversation__message {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-line, #424454);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.ui-conversation__message.is-user {
+  margin-left: 22px;
+  background: rgba(110, 165, 255, 0.1);
+}
+.ui-conversation__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+  color: var(--ui-muted, #b4bfd1);
+}
+.ui-conversation__text {
+  font: 13px/1.55 var(--font-ui, sans-serif);
+  overflow-wrap: anywhere;
+}
+.is-user > .ui-conversation__text { white-space: pre-wrap; }
+.ui-conversation__text pre { max-width: 100%; overflow: auto; }
+.ui-conversation > p { margin: 6px 0; }

@@ -2,6 +2,16 @@
 // As lacunas {0}, {1}... (e as nomeadas, como {sala}) precisam aparecer na tradução, em qualquer ordem.
 // Chave ausente = o texto fica em PT. `npm run i18n:check` lista os textos sem tradução e as chaves que sobraram.
 export const EN: Readonly<Record<string, string>> = {
+  // Conversation in the agent drawer
+  "Conversa": "Conversation",
+  "Você": "You",
+  "Tentar novamente": "Retry",
+  "Mensagens recentes. O histórico completo está no terminal.": "Recent messages. The full history is in the terminal.",
+  "Não foi possível carregar a conversa.": "Could not load the conversation.",
+  "Reconectando a conversa…": "Reconnecting conversation…",
+  "Carregando conversa…": "Loading conversation…",
+  "Aguardando a próxima resposta…": "Waiting for the next reply…",
+  "As mensagens e respostas aparecerão aqui.": "Messages and replies will appear here.",
   // client/src/main.ts
   "Escritório virtual em pixel art que mostra, em tempo real, o que seus agentes do Claude Code estão fazendo.": "Pixel-art virtual office that shows, in real time, what your Claude Code agents are doing.",
 
